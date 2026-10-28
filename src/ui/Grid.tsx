@@ -43,7 +43,7 @@ export function Grid({
     <div
       role="grid"
       aria-label={label}
-      className={`grid w-full max-w-[26rem] select-none gap-[2px] transition-opacity ${dimmed ? 'opacity-60' : ''}`}
+      className={`mx-auto grid w-full max-w-[26rem] select-none gap-[2px] transition-opacity ${dimmed ? 'opacity-60' : ''}`}
       style={{ gridTemplateColumns: `1.25rem repeat(${size}, minmax(0, 1fr))` }}
       onMouseLeave={() => onCellHover?.(null)}
     >
@@ -107,10 +107,10 @@ function cellClasses(cell: CellView): string {
   if (cell.ship) fill = `${SHIP_COLORS[cell.ship]} ${cell.shot === 'sunk' ? 'brightness-50' : ''}`
   if (cell.preview === 'valid') fill = 'bg-emerald-400/70'
   if (cell.preview === 'invalid') fill = 'bg-red-500/60'
-  const interactive = cell.clickable
-    ? 'cursor-crosshair hover:bg-sky-600 hover:ring-2 hover:ring-amber-300/70'
-    : cell.draggable
-      ? 'cursor-grab'
-      : ''
+  let interactive = ''
+  if (cell.preview) interactive = 'cursor-pointer'
+  else if (cell.draggable) interactive = 'cursor-grab'
+  else if (cell.clickable)
+    interactive = 'cursor-crosshair hover:bg-sky-600 hover:ring-2 hover:ring-amber-300/70'
   return `${base} ${fill} ${interactive}`
 }

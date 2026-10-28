@@ -6,7 +6,7 @@ import { getTargetView } from '../engine/view'
 import type { Coord, Difficulty, GameState, PlacedShip, ShipType } from '../engine/types'
 import { loadGame, loadStats, recordResult, saveGame } from '../storage/persist'
 
-export const AI_TURN_DELAY_MS = 700
+export const AI_TURN_DELAY_MS = Number(import.meta.env.VITE_AI_DELAY_MS ?? 700)
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
 

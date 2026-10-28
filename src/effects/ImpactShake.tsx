@@ -16,5 +16,9 @@ export function ImpactShake({ event, children }: { event: ShotEvent | null; chil
     )
   }, [event, animate, scope])
 
-  return <motion.div ref={scope}>{children}</motion.div>
+  return (
+    <motion.div ref={scope} className="w-full">
+      {children}
+    </motion.div>
+  )
 }

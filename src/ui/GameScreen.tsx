@@ -114,7 +114,10 @@ export function GameScreen({ game }: { game: GameApi }) {
         </section>
       </div>
 
-      <ol className="w-full max-w-2xl space-y-0.5 text-xs text-slate-400" aria-label="Battle log">
+      <ol
+        className="w-full max-w-2xl space-y-0.5 text-center text-xs text-slate-400"
+        aria-label="Battle log"
+      >
         {log
           .slice(-6)
           .reverse()
