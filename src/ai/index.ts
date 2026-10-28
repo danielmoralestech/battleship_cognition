@@ -1,17 +1,18 @@
 import type { Difficulty } from '../engine/types'
+import { easyAI } from './easy'
+import { hardAI } from './hard'
+import { mediumAI } from './medium'
 import type { AIPlayer } from './types'
 
-// Placeholder: picks a random unknown cell for every difficulty until the real AIs land.
+const AI_BY_DIFFICULTY: Record<Difficulty, AIPlayer> = {
+  easy: easyAI,
+  medium: mediumAI,
+  hard: hardAI,
+}
+
+/** AIs are stateless, so a shared instance per difficulty is safe. */
 export function createAI(difficulty: Difficulty): AIPlayer {
-  return {
-    difficulty,
-    chooseShot(view, rng) {
-      const options = view.cells.flatMap((row, r) =>
-        row.flatMap((cell, c) => (cell === 'unknown' ? [{ row: r, col: c }] : [])),
-      )
-      return options[rng.int(options.length)]
-    },
-  }
+  return AI_BY_DIFFICULTY[difficulty]
 }
 
 export type { AIPlayer } from './types'
