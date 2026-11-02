@@ -156,7 +156,8 @@ export function GameScreen({ game }: { game: GameApi }) {
   }
 
   if (layout === 'landscape') {
-    const boardWidth = 'w-[min(26rem,calc(100dvh-5.5rem))] shrink-0'
+    // Height-bound, but also capped so 2 boards + 9rem column + 2 gaps + main padding fit the width.
+    const boardWidth = 'w-[min(26rem,calc(100dvh-5.5rem),calc(50vw-6rem))] shrink-0'
     return (
       <div className="flex items-start justify-center gap-3">
         <section aria-label="Enemy waters" className={boardWidth}>
@@ -171,6 +172,7 @@ export function GameScreen({ game }: { game: GameApi }) {
             <br />
             Enemy: {theirs.shots} shots, {theirs.accuracy}%
           </p>
+          <BattleLog game={game} collapsible />
         </div>
         <section aria-label="Your fleet" className={boardWidth}>
           {myBoard()}
