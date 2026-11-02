@@ -10,15 +10,27 @@ const TONE_CLASSES: Record<Tone, string> = {
 }
 
 /** Animated banner announcing the latest shot. */
-export function Announcer({ event, rules }: { event: ShotEvent | null; rules: RuleSet }) {
+export function Announcer({
+  event,
+  rules,
+  compact,
+}: {
+  event: ShotEvent | null
+  rules: RuleSet
+  /** Narrow column: lets the banner wrap onto several lines. */
+  compact?: boolean
+}) {
   const message = event ? describeShot(event, rules) : null
   return (
-    <div className="flex h-12 items-center justify-center" aria-live="polite">
+    <div
+      className={`flex items-center justify-center ${compact ? 'min-h-12' : 'h-12'}`}
+      aria-live="polite"
+    >
       <AnimatePresence mode="wait">
         {event && message && (
           <motion.div
             key={event.id}
-            className={`rounded-full border px-5 py-2 text-sm font-semibold shadow-lg ${TONE_CLASSES[message.tone]}`}
+            className={`border font-semibold shadow-lg ${compact ? 'rounded-xl px-3 py-1.5 text-xs' : 'rounded-full px-5 py-2 text-sm'} ${TONE_CLASSES[message.tone]}`}
             initial={{ y: -12, opacity: 0, scale: message.tone.startsWith('sunk') ? 0.6 : 0.9 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 12, opacity: 0 }}

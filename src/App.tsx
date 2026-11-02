@@ -1,18 +1,23 @@
 import { MotionConfig } from 'motion/react'
 import { useGame } from './hooks/useGame'
+import { useBattleLayout } from './hooks/useMediaQuery'
+import { GameMenu } from './ui/GameMenu'
 import { GameOverModal } from './ui/GameOverModal'
 import { GameScreen } from './ui/GameScreen'
 import { SetupScreen } from './ui/SetupScreen'
 
 export default function App() {
   const game = useGame()
-  const { state, stats, playAgain } = game
+  const { state, stats } = game
   const record = stats[state.difficulty]
+  const tightHeader = useBattleLayout() === 'landscape' && state.phase !== 'setup'
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-sky-950 text-slate-100">
-        <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-[max(0.75rem,env(safe-area-inset-left))] pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-4 sm:py-5">
+      <div className="min-h-dvh bg-gradient-to-b from-slate-950 via-slate-950 to-sky-950 text-slate-100">
+        <header
+          className={`mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 ${tightHeader ? 'py-1.5' : 'pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:py-5'}`}
+        >
           <h1 className="text-2xl font-black tracking-tight text-sky-100">
             <span aria-hidden="true">⚓ </span>Battleship
           </h1>
@@ -20,19 +25,10 @@ export default function App() {
             <span className="rounded-full border border-slate-700 px-3 py-1 capitalize text-slate-300">
               {state.difficulty} AI &middot; {record.wins}W / {record.losses}L
             </span>
-            {state.phase !== 'setup' && (
-              <>
-                <button type="button" className="btn-secondary" onClick={() => playAgain(true)}>
-                  {state.phase === 'gameOver' ? 'Rematch' : 'Restart'}
-                </button>
-                <button type="button" className="btn-secondary" onClick={() => playAgain(false)}>
-                  New fleet
-                </button>
-              </>
-            )}
+            {state.phase !== 'setup' && <GameMenu game={game} />}
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] pb-12 sm:px-4">
+        <main className="mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-12">
           {state.phase === 'setup' ? <SetupScreen game={game} /> : <GameScreen game={game} />}
         </main>
         <GameOverModal key={state.phase === 'gameOver' ? 'over' : 'active'} game={game} />
