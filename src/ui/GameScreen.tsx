@@ -149,9 +149,8 @@ export function GameScreen({ game }: { game: GameApi }) {
           </div>
         </section>
         <BattleLog game={game} collapsible />
-        {fleetOpen && state.phase === 'playing' && (
-          <FleetSheet onClose={() => setFleetOpen(false)}>{myBoard()}</FleetSheet>
-        )}
+        {fleetOpen && <FleetSheet onClose={() => setFleetOpen(false)}>{myBoard()}</FleetSheet>}
+
       </div>
     )
   }
