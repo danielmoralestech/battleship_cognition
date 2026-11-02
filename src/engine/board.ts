@@ -75,6 +75,73 @@ export function upsertShip(ships: PlacedShip[], ship: PlacedShip): PlacedShip[] 
   return [...ships.filter((s) => s.type !== ship.type), ship]
 }
 
+/**
+ * Places a ship so its `grabIndex`-th segment sits on `cell`, shifted as little as
+ * needed to keep it on the board.
+ */
+export function anchorShip(
+  ship: Pick<PlacedShip, 'type' | 'length' | 'orientation'>,
+  cell: Coord,
+  grabIndex: number,
+  gridSize: number,
+): PlacedShip {
+  const clamp = (v: number, max: number) => Math.max(0, Math.min(v, max))
+  const horizontal = ship.orientation === 'horizontal'
+  const origin = {
+    row: clamp(
+      horizontal ? cell.row : cell.row - grabIndex,
+      gridSize - (horizontal ? 1 : ship.length),
+    ),
+    col: clamp(
+      horizontal ? cell.col - grabIndex : cell.col,
+      gridSize - (horizontal ? ship.length : 1),
+    ),
+  }
+  return { type: ship.type, length: ship.length, orientation: ship.orientation, origin }
+}
+
+/** The valid placement of `candidate`'s ship (same orientation) closest to its origin. */
+export function nearestValidPlacement(
+  others: PlacedShip[],
+  candidate: PlacedShip,
+  rules: RuleSet,
+): PlacedShip | null {
+  let best: PlacedShip | null = null
+  let bestDistance = Infinity
+  for (let row = 0; row < rules.gridSize; row++) {
+    for (let col = 0; col < rules.gridSize; col++) {
+      const distance = Math.abs(row - candidate.origin.row) + Math.abs(col - candidate.origin.col)
+      if (distance >= bestDistance) continue
+      const ship = { ...candidate, origin: { row, col } }
+      if (validatePlacement(others, ship, rules) === null) {
+        best = ship
+        bestDistance = distance
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * Rotates a placed ship 90° around `pivot` (one of its cells), nudging it to the
+ * nearest free spot if needed. Returns null when it cannot fit rotated anywhere.
+ */
+export function rotateShip(
+  others: PlacedShip[],
+  ship: PlacedShip,
+  pivot: Coord,
+  rules: RuleSet,
+): PlacedShip | null {
+  const grabIndex = Math.max(
+    0,
+    shipCells(ship).findIndex((c) => sameCoord(c, pivot)),
+  )
+  const orientation: Orientation = ship.orientation === 'horizontal' ? 'vertical' : 'horizontal'
+  const rotated = anchorShip({ ...ship, orientation }, pivot, grabIndex, rules.gridSize)
+  if (validatePlacement(others, rotated, rules) === null) return rotated
+  return nearestValidPlacement(others, rotated, rules)
+}
+
 export function isFleetComplete(ships: PlacedShip[], rules: RuleSet): boolean {
   return rules.fleet.every((spec) => ships.some((s) => s.type === spec.type))
 }

@@ -8,7 +8,10 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: { baseURL: `http://localhost:${PORT}/battleship_cognition/`, trace: 'retain-on-failure' },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'iphone', use: { ...devices['iPhone 13'] } },
+  ],
   webServer: {
     command: `npx vite --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}/battleship_cognition/`,

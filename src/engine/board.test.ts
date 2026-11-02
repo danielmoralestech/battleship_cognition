@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   allShipsSunk,
+  anchorShip,
   createBoard,
   isFleetComplete,
+  nearestValidPlacement,
   randomPlacement,
   receiveShot,
+  rotateShip,
   shipCells,
   validatePlacement,
 } from './board'
@@ -105,5 +108,70 @@ describe('shipCells', () => {
       { row: 2, col: 3 },
       { row: 3, col: 3 },
     ])
+  })
+})
+
+const carrier = (
+  row: number,
+  col: number,
+  orientation: PlacedShip['orientation'] = 'horizontal',
+): PlacedShip => ({ type: 'carrier', length: 5, orientation, origin: { row, col } })
+
+describe('anchorShip', () => {
+  it('puts the grabbed segment on the target cell', () => {
+    expect(anchorShip(carrier(0, 0), { row: 4, col: 4 }, 2, 10).origin).toEqual({ row: 4, col: 2 })
+    expect(anchorShip(carrier(0, 0, 'vertical'), { row: 4, col: 4 }, 2, 10).origin).toEqual({
+      row: 2,
+      col: 4,
+    })
+  })
+
+  it('clamps the ship onto the board', () => {
+    expect(anchorShip(carrier(0, 0), { row: 9, col: 9 }, 0, 10).origin).toEqual({ row: 9, col: 5 })
+    expect(anchorShip(carrier(0, 0, 'vertical'), { row: 0, col: 0 }, 4, 10).origin).toEqual({
+      row: 0,
+      col: 0,
+    })
+  })
+})
+
+describe('nearestValidPlacement', () => {
+  it('returns the candidate when it is already valid', () => {
+    expect(nearestValidPlacement([], destroyer(3, 3), STANDARD_RULES)).toEqual(destroyer(3, 3))
+  })
+
+  it('moves to the closest free spot when blocked', () => {
+    const blocker = carrier(3, 0)
+    const result = nearestValidPlacement([blocker], destroyer(3, 0), STANDARD_RULES)!
+    expect(validatePlacement([blocker], result, STANDARD_RULES)).toBeNull()
+    expect(Math.abs(result.origin.row - 3) + Math.abs(result.origin.col)).toBe(1)
+  })
+})
+
+describe('rotateShip', () => {
+  it('rotates around the tapped cell', () => {
+    const rotated = rotateShip([], carrier(4, 2), { row: 4, col: 4 }, STANDARD_RULES)
+    expect(rotated).toEqual(carrier(2, 4, 'vertical'))
+  })
+
+  it('shifts to stay on the board', () => {
+    const rotated = rotateShip([], carrier(0, 0), { row: 0, col: 0 }, STANDARD_RULES)
+    expect(rotated).toEqual(carrier(0, 0, 'vertical'))
+  })
+
+  it('nudges around other ships', () => {
+    const others = [destroyer(5, 4)]
+    const rotated = rotateShip(others, carrier(3, 2), { row: 3, col: 4 }, STANDARD_RULES)!
+    expect(rotated.orientation).toBe('vertical')
+    expect(validatePlacement(others, rotated, STANDARD_RULES)).toBeNull()
+  })
+
+  it('returns null when the rotated ship fits nowhere', () => {
+    const rules = { ...STANDARD_RULES, gridSize: 5 }
+    const others: PlacedShip[] = [
+      { type: 'cruiser', length: 3, orientation: 'horizontal', origin: { row: 0, col: 0 } },
+      destroyer(0, 3),
+    ]
+    expect(rotateShip(others, carrier(4, 0), { row: 4, col: 0 }, rules)).toBeNull()
   })
 })

@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
 @layer components {
   .btn-primary {
     @apply rounded-lg bg-amber-400 px-4 py-2.5 font-semibold text-slate-900 shadow transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400;

@@ -12,7 +12,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-sky-950 text-slate-100">
-        <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-5">
+        <header className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-[max(0.75rem,env(safe-area-inset-left))] pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-4 sm:py-5">
           <h1 className="text-2xl font-black tracking-tight text-sky-100">
             <span aria-hidden="true">⚓ </span>Battleship
           </h1>
@@ -32,7 +32,7 @@ export default function App() {
             )}
           </div>
         </header>
-        <main className="mx-auto max-w-5xl px-4 pb-12">
+        <main className="mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] pb-12 sm:px-4">
           {state.phase === 'setup' ? <SetupScreen game={game} /> : <GameScreen game={game} />}
         </main>
         <GameOverModal key={state.phase === 'gameOver' ? 'over' : 'active'} game={game} />
