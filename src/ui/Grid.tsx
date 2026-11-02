@@ -27,6 +27,8 @@ interface GridProps {
   touchDrag?: boolean
   gridRef?: Ref<HTMLDivElement>
   dimmed?: boolean
+  /** Small read-only overview: no coordinate labels or interactive cells. */
+  mini?: boolean
 }
 
 const COLUMNS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -42,8 +44,10 @@ export function Grid({
   touchDrag,
   gridRef,
   dimmed,
+  mini,
 }: GridProps) {
   const indices = Array.from({ length: size }, (_, i) => i)
+  if (mini) return <MiniGrid size={size} label={label} getCell={getCell} />
   return (
     <div
       ref={gridRef}
@@ -94,6 +98,38 @@ export function Grid({
           })}
         </div>
       ))}
+    </div>
+  )
+}
+
+function MiniGrid({ size, label, getCell }: Pick<GridProps, 'size' | 'label' | 'getCell'>) {
+  const indices = Array.from({ length: size }, (_, i) => i)
+  return (
+    <div
+      role="img"
+      aria-label={label}
+      className="grid w-full gap-px"
+      style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
+    >
+      {indices.flatMap((row) =>
+        indices.map((col) => {
+          const coord = { row, col }
+          const cell = getCell(coord)
+          const fill = cell.ship
+            ? `${SHIP_COLORS[cell.ship]} ${cell.shot === 'sunk' ? 'brightness-50' : ''}`
+            : 'bg-sky-900/70'
+          return (
+            <span
+              key={`${row}-${col}`}
+              data-coord={coordLabel(coord)}
+              data-shot={cell.shot ?? ''}
+              className={`relative aspect-square rounded-[1px] ${fill}`}
+            >
+              {cell.shot && <ShotMarker result={cell.shot} animate={!!cell.animate} />}
+            </span>
+          )
+        }),
+      )}
     </div>
   )
 }
