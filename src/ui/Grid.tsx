@@ -1,4 +1,4 @@
-import type { DragEvent } from 'react'
+import type { PointerEvent, Ref } from 'react'
 import { coordLabel } from '../engine/board'
 import type { Coord, ShipType, ShotResult } from '../engine/types'
 import { ShotMarker } from '../effects'
@@ -11,6 +11,8 @@ export interface CellView {
   animate?: boolean
   clickable?: boolean
   draggable?: boolean
+  /** Original spot of a ship that is currently being dragged. */
+  lifted?: boolean
 }
 
 interface GridProps {
@@ -20,8 +22,10 @@ interface GridProps {
   onCellClick?: (coord: Coord) => void
   onCellHover?: (coord: Coord | null) => void
   onCellContextMenu?: (coord: Coord) => void
-  onCellDragStart?: (coord: Coord, e: DragEvent) => void
-  onCellDrop?: (coord: Coord) => void
+  onCellPointerDown?: (coord: Coord, e: PointerEvent) => void
+  /** Disables browser touch panning/zooming on the board so touches can drag ships. */
+  touchDrag?: boolean
+  gridRef?: Ref<HTMLDivElement>
   dimmed?: boolean
 }
 
@@ -34,18 +38,20 @@ export function Grid({
   onCellClick,
   onCellHover,
   onCellContextMenu,
-  onCellDragStart,
-  onCellDrop,
+  onCellPointerDown,
+  touchDrag,
+  gridRef,
   dimmed,
 }: GridProps) {
   const indices = Array.from({ length: size }, (_, i) => i)
   return (
     <div
+      ref={gridRef}
       role="grid"
       aria-label={label}
-      className={`mx-auto grid w-full max-w-[26rem] select-none gap-[2px] transition-opacity ${dimmed ? 'opacity-60' : ''}`}
+      className={`mx-auto grid w-full max-w-[26rem] select-none gap-[2px] transition-opacity ${dimmed ? 'opacity-60' : ''} ${touchDrag ? 'touch-none [-webkit-touch-callout:none]' : ''}`}
       style={{ gridTemplateColumns: `1.25rem repeat(${size}, minmax(0, 1fr))` }}
-      onMouseLeave={() => onCellHover?.(null)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && onCellHover?.(null)}
     >
       <span />
       {indices.map((c) => (
@@ -69,24 +75,16 @@ export function Grid({
                 aria-label={`${coordLabel(coord)}${cell.ship ? `, ${cell.ship}` : ''}${cell.shot ? `, ${cell.shot}` : ''}`}
                 data-coord={coordLabel(coord)}
                 data-shot={cell.shot ?? ''}
+                data-row={row}
+                data-col={col}
                 disabled={!cell.clickable && !cell.draggable}
-                draggable={cell.draggable}
                 onClick={() => onCellClick?.(coord)}
-                onMouseEnter={() => onCellHover?.(coord)}
+                onPointerEnter={(e) => e.pointerType === 'mouse' && onCellHover?.(coord)}
+                onPointerDown={(e) => onCellPointerDown?.(coord, e)}
                 onContextMenu={(e) => {
                   if (!onCellContextMenu) return
                   e.preventDefault()
                   onCellContextMenu(coord)
-                }}
-                onDragStart={(e) => onCellDragStart?.(coord, e)}
-                onDragOver={(e) => {
-                  if (!onCellDrop) return
-                  e.preventDefault()
-                  onCellHover?.(coord)
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  onCellDrop?.(coord)
                 }}
                 className={cellClasses(cell)}
               >
@@ -105,6 +103,7 @@ function cellClasses(cell: CellView): string {
     'relative aspect-square rounded-[3px] transition-colors disabled:cursor-default focus-visible:outline-2 focus-visible:outline-amber-300'
   let fill = 'bg-sky-900/70'
   if (cell.ship) fill = `${SHIP_COLORS[cell.ship]} ${cell.shot === 'sunk' ? 'brightness-50' : ''}`
+  if (cell.lifted) fill = `${fill} opacity-40`
   if (cell.preview === 'valid') fill = 'bg-emerald-400/70'
   if (cell.preview === 'invalid') fill = 'bg-red-500/60'
   let interactive = ''
