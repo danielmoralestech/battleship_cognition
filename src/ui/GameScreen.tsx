@@ -150,7 +150,6 @@ export function GameScreen({ game }: { game: GameApi }) {
         </section>
         <BattleLog game={game} collapsible />
         {fleetOpen && <FleetSheet onClose={() => setFleetOpen(false)}>{myBoard()}</FleetSheet>}
-
       </div>
     )
   }
