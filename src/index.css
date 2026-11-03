@@ -75,7 +75,8 @@
   .radar-sweep::before {
     content: '';
     position: absolute;
-    inset: -50%;
+    inset: -21%;
+    will-change: transform;
     background: conic-gradient(from 0deg, transparent 0deg 290deg, rgb(var(--radar) / 0.26) 360deg);
     animation: radar-spin 3.2s linear infinite;
   }

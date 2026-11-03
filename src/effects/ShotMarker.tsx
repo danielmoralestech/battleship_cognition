@@ -43,8 +43,7 @@ export function ShotMarker({
           transition={{ ...LAND, duration: 0.3 }}
         >
           {!sunk && <span className="fx-flame" />}
-          <span className="fx-smoke" />
-          <span className="fx-smoke fx-smoke-late" />
+          <span className={sunk ? 'fx-smoke fx-smoke-late' : 'fx-smoke'} />
         </motion.span>
       )}
       <motion.span
