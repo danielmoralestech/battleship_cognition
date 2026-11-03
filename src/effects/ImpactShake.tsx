@@ -1,8 +1,9 @@
 import { motion, useAnimate } from 'motion/react'
 import { useEffect, type ReactNode } from 'react'
 import type { ShotEvent } from '../engine/types'
+import { SHELL_MS } from './timing'
 
-/** Shakes its children when a new hit/sunk event lands on this board. */
+/** Shakes its children when a new hit/sunk shell lands on this board. */
 export function ImpactShake({ event, children }: { event: ShotEvent | null; children: ReactNode }) {
   const [scope, animate] = useAnimate()
 
@@ -12,7 +13,7 @@ export function ImpactShake({ event, children }: { event: ShotEvent | null; chil
     animate(
       scope.current,
       { x: [0, -amp, amp, -amp / 2, amp / 2, 0] },
-      { duration: event.result === 'sunk' ? 0.5 : 0.3 },
+      { duration: event.result === 'sunk' ? 0.5 : 0.3, delay: SHELL_MS / 1000 },
     )
   }, [event, animate, scope])
 

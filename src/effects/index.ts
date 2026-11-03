@@ -1,4 +1,7 @@
 export { Announcer } from './Announcer'
+export { BoardFx } from './BoardFx'
+export { Celebration } from './Celebration'
 export { ImpactShake } from './ImpactShake'
+export { ScreenFlash } from './ScreenFlash'
 export { ShotMarker } from './ShotMarker'
 export { describeShot } from './describeShot'

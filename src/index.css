@@ -18,3 +18,146 @@
     @apply rounded-lg border border-slate-600 px-3 py-1.5 text-sm text-slate-200 transition hover:border-slate-400 hover:bg-slate-800;
   }
 }
+
+/* Board atmosphere: animated water under the grid cells. The ::before/::after
+   insets skip the coordinate label row (1rem) and column (1.25rem) plus the 2px gap. */
+@layer components {
+  .ocean {
+    position: relative;
+    isolation: isolate;
+  }
+  .ocean::before,
+  .ocean-waves,
+  .radar-sweep {
+    content: '';
+    position: absolute;
+    inset: calc(1rem + 2px) 0 0 calc(1.25rem + 2px);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+  .ocean::before {
+    z-index: -2;
+    background:
+      radial-gradient(120% 70% at 15% 0%, rgb(56 189 248 / 0.22), transparent 60%),
+      radial-gradient(90% 60% at 90% 100%, rgb(14 165 233 / 0.18), transparent 65%),
+      linear-gradient(165deg, #0c4a6e, #082f49 55%, #0a3552);
+    box-shadow:
+      inset 0 0 28px rgb(2 6 23 / 0.65),
+      0 0 0 1px rgb(56 189 248 / 0.25),
+      0 0 24px rgb(14 165 233 / 0.12);
+  }
+  /* Drifts with a transform on an oversized layer so it stays on the compositor. */
+  .ocean-waves {
+    z-index: -1;
+    overflow: hidden;
+  }
+  .ocean-waves::before {
+    content: '';
+    position: absolute;
+    inset: -25%;
+    background:
+      repeating-radial-gradient(
+        ellipse at 40% 45%,
+        rgb(186 230 253 / 0.07) 0 2px,
+        transparent 3px 16px
+      ),
+      repeating-linear-gradient(115deg, transparent 0 22px, rgb(186 230 253 / 0.05) 22px 26px);
+    animation: ocean-drift 16s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  .radar-sweep {
+    overflow: hidden;
+    --radar: 56 189 248;
+  }
+  .radar-threat {
+    --radar: 248 113 113;
+  }
+  .radar-sweep::before {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(from 0deg, transparent 0deg 290deg, rgb(var(--radar) / 0.26) 360deg);
+    animation: radar-spin 3.2s linear infinite;
+  }
+
+  /* Burning hit cells. */
+  .fx-flame {
+    position: absolute;
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 50% 60%,
+      rgb(253 224 71 / 0.85),
+      rgb(249 115 22 / 0.55) 40%,
+      transparent 70%
+    );
+    animation: fx-flicker 0.8s ease-in-out infinite alternate;
+  }
+  .fx-smoke {
+    position: absolute;
+    left: 30%;
+    top: 25%;
+    width: 36%;
+    height: 36%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(148 163 184 / 0.6), transparent 70%);
+    animation: fx-smoke 2.6s ease-out infinite;
+  }
+  .fx-smoke-late {
+    left: 40%;
+    animation-delay: -1.3s;
+  }
+}
+
+@keyframes ocean-drift {
+  from {
+    transform: translate(-8%, -5%);
+  }
+  to {
+    transform: translate(8%, 5%);
+  }
+}
+@keyframes radar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fx-flicker {
+  0% {
+    transform: scale(0.85) translateY(4%);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05) translateY(-5%);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.92);
+    opacity: 0.85;
+  }
+}
+@keyframes fx-smoke {
+  0% {
+    transform: translate(0, 0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(30%, -180%) scale(1.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ocean-waves::before,
+  .fx-flame {
+    animation: none;
+  }
+  .fx-smoke,
+  .radar-sweep {
+    display: none;
+  }
+}

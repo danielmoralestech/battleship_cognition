@@ -53,10 +53,11 @@ export function Grid({
       ref={gridRef}
       role="grid"
       aria-label={label}
-      className={`mx-auto grid w-full max-w-[26rem] select-none gap-[2px] transition-opacity ${dimmed ? 'opacity-60' : ''} ${touchDrag ? 'touch-none [-webkit-touch-callout:none]' : ''}`}
+      className={`ocean mx-auto grid w-full max-w-[26rem] select-none gap-[2px] transition-opacity ${dimmed ? 'opacity-60' : ''} ${touchDrag ? 'touch-none [-webkit-touch-callout:none]' : ''}`}
       style={{ gridTemplateColumns: `1.25rem repeat(${size}, minmax(0, 1fr))` }}
       onPointerLeave={(e) => e.pointerType === 'mouse' && onCellHover?.(null)}
     >
+      <span aria-hidden="true" className="ocean-waves" />
       <span />
       {indices.map((c) => (
         <span key={c} className="text-center text-xs font-semibold text-sky-300/70">
@@ -125,7 +126,7 @@ function MiniGrid({ size, label, getCell }: Pick<GridProps, 'size' | 'label' | '
               data-shot={cell.shot ?? ''}
               className={`relative aspect-square rounded-[1px] ${fill}`}
             >
-              {cell.shot && <ShotMarker result={cell.shot} animate={!!cell.animate} />}
+              {cell.shot && <ShotMarker result={cell.shot} animate={!!cell.animate} lite />}
             </span>
           )
         }),
@@ -137,7 +138,7 @@ function MiniGrid({ size, label, getCell }: Pick<GridProps, 'size' | 'label' | '
 function cellClasses(cell: CellView): string {
   const base =
     'relative aspect-square rounded-[3px] transition-colors disabled:cursor-default focus-visible:outline-2 focus-visible:outline-amber-300'
-  let fill = 'bg-sky-900/70'
+  let fill = 'bg-sky-950/30 ring-1 ring-inset ring-sky-300/10'
   if (cell.ship) fill = `${SHIP_COLORS[cell.ship]} ${cell.shot === 'sunk' ? 'brightness-50' : ''}`
   if (cell.lifted) fill = `${fill} opacity-40`
   if (cell.preview === 'valid') fill = 'bg-emerald-400/70'
@@ -146,6 +147,6 @@ function cellClasses(cell: CellView): string {
   if (cell.preview) interactive = 'cursor-pointer'
   else if (cell.draggable) interactive = 'cursor-grab'
   else if (cell.clickable)
-    interactive = 'cursor-crosshair hover:bg-sky-600 hover:ring-2 hover:ring-amber-300/70'
+    interactive = 'cursor-crosshair hover:bg-sky-400/30 hover:ring-2 hover:ring-amber-300/70'
   return `${base} ${fill} ${interactive}`
 }
