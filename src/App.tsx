@@ -1,22 +1,31 @@
+import { useEffect, useState } from 'react'
 import { MotionConfig } from 'motion/react'
 import { useGame } from './hooks/useGame'
 import { useBattleLayout } from './hooks/useMediaQuery'
+import { Battle3DLoader } from './ui/Battle3DLoader'
 import { GameMenu } from './ui/GameMenu'
 import { GameOverModal } from './ui/GameOverModal'
 import { GameScreen } from './ui/GameScreen'
 import { SetupScreen } from './ui/SetupScreen'
+import { hasWebGL2, load3DView, wants3DView } from './ui/view3d'
 
 export default function App() {
   const game = useGame()
   const { state, stats } = game
   const record = stats[state.difficulty]
   const tightHeader = useBattleLayout() === 'landscape' && state.phase !== 'setup'
+  const [view3d] = useState(wants3DView)
+  const battle3d = view3d && state.phase !== 'setup'
+
+  useEffect(() => {
+    if (view3d && hasWebGL2()) void load3DView().catch(() => {})
+  }, [view3d])
 
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-dvh bg-gradient-to-b from-slate-950 via-slate-950 to-sky-950 text-slate-100">
         <header
-          className={`mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 ${tightHeader ? 'py-1.5' : 'pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:py-5'}`}
+          className={`${battle3d ? 'relative z-10' : ''} mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 ${tightHeader ? 'py-1.5' : 'pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:py-5'}`}
         >
           <h1 className="text-2xl font-black tracking-tight text-sky-100">
             <span aria-hidden="true">⚓ </span>Battleship
@@ -29,7 +38,13 @@ export default function App() {
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-12">
-          {state.phase === 'setup' ? <SetupScreen game={game} /> : <GameScreen game={game} />}
+          {state.phase === 'setup' ? (
+            <SetupScreen game={game} />
+          ) : view3d ? (
+            <Battle3DLoader game={game} />
+          ) : (
+            <GameScreen game={game} />
+          )}
         </main>
         <GameOverModal key={state.phase === 'gameOver' ? 'over' : 'active'} game={game} />
       </div>
