@@ -5,8 +5,11 @@ type Action = 'restart' | 'newFleet'
 
 const LABELS: Record<Action, string> = { restart: 'Restart', newFleet: 'New fleet' }
 
-/** Restart / New fleet: inline on wider screens, behind a menu on phones, confirmed mid-battle. */
-export function GameMenu({ game }: { game: GameApi }) {
+/**
+ * Restart / New fleet: inline on wider screens, behind a menu on phones, confirmed mid-battle.
+ * `onView3D` adds a "3D view" switch (omitted in 3D or without WebGL 2).
+ */
+export function GameMenu({ game, onView3D }: { game: GameApi; onView3D?: () => void }) {
   const { state, playAgain } = game
   const [menuOpen, setMenuOpen] = useState(false)
   const [pending, setPending] = useState<Action | null>(null)
@@ -28,6 +31,11 @@ export function GameMenu({ game }: { game: GameApi }) {
             {label(a)}
           </button>
         ))}
+        {onView3D && (
+          <button type="button" className="btn-secondary" onClick={onView3D}>
+            3D view
+          </button>
+        )}
       </div>
 
       <div className="relative sm:hidden">
@@ -59,6 +67,19 @@ export function GameMenu({ game }: { game: GameApi }) {
                   {label(a)}
                 </button>
               ))}
+              {onView3D && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="border-t border-slate-800 px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-800"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onView3D()
+                  }}
+                >
+                  3D view
+                </button>
+              )}
             </div>
           </>
         )}
