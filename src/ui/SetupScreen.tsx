@@ -14,7 +14,7 @@ import type { Coord, Difficulty, Orientation, PlacedShip, ShipType } from '../en
 import type { GameApi } from '../hooks/useGame'
 import { Grid, type CellView } from './Grid'
 import { measureGrid } from './gridMetrics'
-import { SHIP_COLORS } from './ships'
+import { ShipSprite, type BoardShip } from './ShipSprite'
 
 const DIFFICULTY_INFO: Record<Difficulty, string> = {
   easy: 'Fires at random.',
@@ -252,6 +252,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
       }
   const previewCells = preview.ship ? shipCells(preview.ship) : []
   const liftedType = drag?.session.from === 'board' ? drag.session.type : null
+  const ghostLength = drag ? drag.session.length * drag.pitch - (drag.pitch - drag.cellSize) : 0
 
   const getCell = (coord: Coord): CellView => {
     const inPreview = previewCells.some((c) => sameCoord(c, coord))
@@ -259,11 +260,14 @@ export function SetupScreen({ game }: { game: GameApi }) {
     return {
       ship: ship?.type,
       preview: inPreview ? (preview.valid ? 'valid' : 'invalid') : undefined,
-      lifted: !!ship && ship.type === liftedType,
       clickable: true,
       draggable: !!ship,
     }
   }
+
+  const boardShips: BoardShip[] = ships.map((ship) => ({ ship, lifted: ship.type === liftedType }))
+  if (preview.ship)
+    boardShips.push({ ship: preview.ship, preview: preview.valid ? 'valid' : 'invalid' })
 
   const complete = isFleetComplete(ships, rules)
 
@@ -316,14 +320,12 @@ export function SetupScreen({ game }: { game: GameApi }) {
                     {spec.name}
                     {placed && <span className="sr-only lg:not-sr-only"> (placed)</span>}
                   </span>
-                  <span className="flex gap-0.5">
-                    {Array.from({ length: spec.length }, (_, i) => (
-                      <span
-                        key={i}
-                        className={`size-2 rounded-[2px] lg:size-3 ${placed ? 'bg-slate-600' : SHIP_COLORS[spec.type]}`}
-                      />
-                    ))}
-                  </span>
+                  <ShipSprite
+                    type={spec.type}
+                    length={spec.length}
+                    className={`h-3 shrink-0 lg:h-4 ${placed ? 'opacity-35 grayscale' : ''}`}
+                    style={{ aspectRatio: spec.length }}
+                  />
                 </button>
               </li>
             )
@@ -365,6 +367,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
             gridRef={gridRef}
             touchDrag
             getCell={getCell}
+            ships={boardShips}
             onCellHover={setHover}
             onCellClick={onCellClick}
             onCellContextMenu={(coord) => {
@@ -428,7 +431,8 @@ export function SetupScreen({ game }: { game: GameApi }) {
       {drag && !drag.target && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed z-50 flex gap-[2px] opacity-80"
+          data-testid="drag-ghost"
+          className="pointer-events-none fixed z-50 opacity-90 drop-shadow-lg"
           style={{
             left:
               drag.x -
@@ -440,16 +444,18 @@ export function SetupScreen({ game }: { game: GameApi }) {
               (drag.session.orientation === 'vertical'
                 ? (drag.session.grabIndex + 0.5) * drag.pitch
                 : drag.cellSize / 2),
-            flexDirection: drag.session.orientation === 'horizontal' ? 'row' : 'column',
           }}
         >
-          {Array.from({ length: drag.session.length }, (_, i) => (
-            <span
-              key={i}
-              className={`rounded-[3px] ${SHIP_COLORS[drag.session.type]}`}
-              style={{ width: drag.cellSize, height: drag.cellSize }}
-            />
-          ))}
+          <ShipSprite
+            type={drag.session.type}
+            length={drag.session.length}
+            orientation={drag.session.orientation}
+            style={
+              drag.session.orientation === 'horizontal'
+                ? { width: ghostLength, height: drag.cellSize }
+                : { width: drag.cellSize, height: ghostLength }
+            }
+          />
         </div>
       )}
     </div>

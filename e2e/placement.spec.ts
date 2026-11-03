@@ -122,4 +122,20 @@ test.describe('mouse placement', () => {
     await cell(page, 'C3').click({ button: 'right' })
     await expectShip(page, ['A3', 'E3'], 'carrier')
   })
+
+  test('ships are sprites and the placement preview is tinted by validity', async ({ page }) => {
+    await cell(page, 'E5').hover()
+    await expect(board(page).locator('[data-ship="carrier"][data-preview="valid"]')).toBeVisible()
+    await cell(page, 'E5').click()
+    await expect(board(page).locator('[data-ship="carrier"]:not([data-preview])')).toBeVisible()
+
+    await cell(page, 'D5').hover()
+    await expect(
+      board(page).locator('[data-ship="battleship"][data-preview="invalid"]'),
+    ).toBeVisible()
+    await cell(page, 'A1').hover()
+    await expect(
+      board(page).locator('[data-ship="battleship"][data-preview="valid"]'),
+    ).toBeVisible()
+  })
 })
