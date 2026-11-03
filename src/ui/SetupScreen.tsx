@@ -216,7 +216,12 @@ export function SetupScreen({ game }: { game: GameApi }) {
         rotated = false
       }
       lastEvent = e.timeStamp
-      const scale = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1
+      const scale =
+        e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? el.clientHeight
+          : e.deltaMode === WheelEvent.DOM_DELTA_LINE
+            ? 16
+            : 1
       travel += Math.abs(e.deltaY || e.deltaX) * scale
       if (rotated || travel < WHEEL_STEP) return
       rotated = true
