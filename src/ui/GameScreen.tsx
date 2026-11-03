@@ -8,6 +8,7 @@ import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
 import { Grid, type CellView } from './Grid'
+import type { BoardShip } from './ShipSprite'
 
 export function GameScreen({ game }: { game: GameApi }) {
   const { state, fire } = game
@@ -20,6 +21,14 @@ export function GameScreen({ game }: { game: GameApi }) {
 
   const enemyView = getTargetView(boards.ai, rules)
   const revealEnemy = state.phase === 'gameOver'
+  const announcedSunk = new Set(enemyView.sunkShips.map((s) => s.type))
+  const enemyShips: BoardShip[] = boards.ai.ships
+    .filter((ship) => revealEnemy || announcedSunk.has(ship.type))
+    .map((ship) => ({ ship, sunk: isShipSunk(boards.ai, ship) }))
+  const myShips: BoardShip[] = boards.human.ships.map((ship) => ({
+    ship,
+    sunk: isShipSunk(boards.human, ship),
+  }))
 
   const enemyGridRef = useRef<HTMLDivElement>(null)
   const myGridRef = useRef<HTMLDivElement>(null)
@@ -105,6 +114,7 @@ export function GameScreen({ game }: { game: GameApi }) {
           size={rules.gridSize}
           label="Enemy waters"
           getCell={enemyCell}
+          ships={enemyShips}
           onCellClick={(coord) => humanTurn && fire(coord)}
           dimmed={enemyAiming}
           gridRef={enemyGridRef}
@@ -115,7 +125,7 @@ export function GameScreen({ game }: { game: GameApi }) {
   const myBoard = (mini = false) => (
     <ImpactShake event={latestBy('ai')}>
       {mini ? (
-        <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} mini />
+        <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} ships={myShips} mini />
       ) : (
         <BoardFx
           event={latestBy('ai')}
@@ -124,7 +134,13 @@ export function GameScreen({ game }: { game: GameApi }) {
           sunkCells={sunkCells(latestBy('ai'))}
           sweep={enemyAiming ? 'threat' : null}
         >
-          <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} gridRef={myGridRef} />
+          <Grid
+            size={rules.gridSize}
+            label="Your fleet"
+            getCell={myCell}
+            ships={myShips}
+            gridRef={myGridRef}
+          />
         </BoardFx>
       )}
     </ImpactShake>

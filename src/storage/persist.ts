@@ -2,6 +2,7 @@ import type { Difficulty, GameState } from '../engine/types'
 
 const GAME_KEY = 'battleship:game:v1'
 const STATS_KEY = 'battleship:stats:v1'
+const VIEW_KEY = 'battleship:view:v1'
 
 export interface Record {
   wins: number
@@ -45,6 +46,13 @@ export function loadGame(): GameState | null {
 }
 
 export const saveGame = (state: GameState) => write(GAME_KEY, state)
+
+export const loadView = (): '2d' | '3d' | null => {
+  const view = read<string>(VIEW_KEY)
+  return view === '2d' || view === '3d' ? view : null
+}
+
+export const saveView = (view: '2d' | '3d') => write(VIEW_KEY, view)
 
 export function loadStats(): Stats {
   return { ...emptyStats(), ...read<Stats>(STATS_KEY) }
