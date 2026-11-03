@@ -11,14 +11,8 @@ import { CAMERA_FOV, Scene, type HudInsets } from './Scene'
 
 const MAX_DPR = 2
 
-function url2D() {
-  const url = new URL(window.location.href)
-  url.searchParams.delete('view')
-  return url.toString()
-}
-
 /** Experimental three.js battle view (`?view=3d`). Fleet placement stays on the 2D screen. */
-export default function Battle3D({ game }: { game: GameApi }) {
+export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () => void }) {
   const { state, fire } = game
   const layout = useBattleLayout()
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -81,9 +75,9 @@ export default function Battle3D({ game }: { game: GameApi }) {
         {contextLost ? (
           <p className="flex h-full items-center justify-center p-6 text-center text-sm text-slate-300">
             The 3D view lost its graphics context.{' '}
-            <a className="ml-1 underline" href={url2D()}>
+            <button type="button" className="ml-1 underline" onClick={onExit}>
               Switch to 2D
-            </a>
+            </button>
           </p>
         ) : (
           <Canvas
@@ -171,9 +165,9 @@ export default function Battle3D({ game }: { game: GameApi }) {
                 {focus === 'ai' ? 'Your fleet' : 'Enemy waters'}
               </button>
             )}
-            <a className="btn-secondary px-3 py-1.5 text-xs" href={url2D()}>
+            <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={onExit}>
               2D view
-            </a>
+            </button>
           </div>
         </div>
       </div>

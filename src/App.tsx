@@ -7,19 +7,25 @@ import { GameMenu } from './ui/GameMenu'
 import { GameOverModal } from './ui/GameOverModal'
 import { GameScreen } from './ui/GameScreen'
 import { SetupScreen } from './ui/SetupScreen'
-import { hasWebGL2, load3DView, wants3DView } from './ui/view3d'
+import { hasWebGL2, initialView, load3DView, rememberView, type ViewMode } from './ui/view3d'
 
 export default function App() {
   const game = useGame()
   const { state, stats } = game
   const record = stats[state.difficulty]
   const tightHeader = useBattleLayout() === 'landscape' && state.phase !== 'setup'
-  const [view3d] = useState(wants3DView)
+  const [view, setViewState] = useState(initialView)
+  const [webgl2] = useState(hasWebGL2)
+  const view3d = view === '3d'
   const battle3d = view3d && state.phase !== 'setup'
+  const setView = (next: ViewMode) => {
+    rememberView(next)
+    setViewState(next)
+  }
 
   useEffect(() => {
-    if (view3d && hasWebGL2()) void load3DView().catch(() => {})
-  }, [view3d])
+    if (view3d && webgl2) void load3DView().catch(() => {})
+  }, [view3d, webgl2])
 
   return (
     <MotionConfig reducedMotion="user">
@@ -34,14 +40,19 @@ export default function App() {
             <span className="rounded-full border border-slate-700 px-3 py-1 capitalize text-slate-300">
               {state.difficulty} AI &middot; {record.wins}W / {record.losses}L
             </span>
-            {state.phase !== 'setup' && <GameMenu game={game} />}
+            {state.phase !== 'setup' && (
+              <GameMenu
+                game={game}
+                onView3D={!view3d && webgl2 ? () => setView('3d') : undefined}
+              />
+            )}
           </div>
         </header>
         <main className="mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-12">
           {state.phase === 'setup' ? (
             <SetupScreen game={game} />
           ) : view3d ? (
-            <Battle3DLoader game={game} />
+            <Battle3DLoader game={game} onExit={() => setView('2d')} />
           ) : (
             <GameScreen game={game} />
           )}
