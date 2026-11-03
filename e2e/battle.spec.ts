@@ -89,3 +89,30 @@ test.describe('desktop', () => {
     await expect(page.getByRole('button', { name: 'Place 5 more' })).toBeVisible()
   })
 })
+
+test('ships are drawn as sprites and sunk enemy ships become wrecks', async ({ page }) => {
+  await startBattle(page)
+  const myFleet = page.locator('[aria-label="Your fleet"]').first()
+  await expect(myFleet.locator('[data-ship]')).toHaveCount(5)
+  await expect(enemy(page).locator('[data-ship]')).toHaveCount(0)
+
+  const destroyer = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('battleship:game:v1')!)
+    return state.boards.ai.ships.find((s: { type: string }) => s.type === 'destroyer')
+  })
+  const cols = 'ABCDEFGHIJ'
+  for (let i = 0; i < destroyer.length; i++) {
+    const row = destroyer.origin.row + (destroyer.orientation === 'vertical' ? i : 0)
+    const col = destroyer.origin.col + (destroyer.orientation === 'horizontal' ? i : 0)
+    await expect(page.getByTestId('turn-indicator')).toHaveText(/Your turn/)
+    await enemy(page)
+      .locator(`[data-coord="${cols[col]}${row + 1}"]`)
+      .click()
+    await expect(page.getByText(new RegExp(`Your shots: ${i + 1}\\b`))).toBeVisible()
+  }
+
+  const wreck = enemy(page).locator('[data-ship="destroyer"][data-sunk="true"]')
+  await expect(wreck).toBeVisible()
+  await expect(wreck.locator('[data-wreck]')).toHaveCount(1)
+  expect(await wreck.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none')
+})

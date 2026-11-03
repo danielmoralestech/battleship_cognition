@@ -8,6 +8,7 @@ import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
 import { Grid, type CellView } from './Grid'
+import type { BoardShip } from './ShipSprite'
 
 export function GameScreen({ game }: { game: GameApi }) {
   const { state, fire } = game
@@ -20,6 +21,14 @@ export function GameScreen({ game }: { game: GameApi }) {
 
   const enemyView = getTargetView(boards.ai, rules)
   const revealEnemy = state.phase === 'gameOver'
+  const announcedSunk = new Set(enemyView.sunkShips.map((s) => s.type))
+  const enemyShips: BoardShip[] = boards.ai.ships
+    .filter((ship) => revealEnemy || announcedSunk.has(ship.type))
+    .map((ship) => ({ ship, sunk: isShipSunk(boards.ai, ship) }))
+  const myShips: BoardShip[] = boards.human.ships.map((ship) => ({
+    ship,
+    sunk: isShipSunk(boards.human, ship),
+  }))
 
   const isLatest = (by: PlayerId, coord: Coord) =>
     !!latest && latest.by === by && sameCoord(latest.coord, coord)
@@ -86,6 +95,7 @@ export function GameScreen({ game }: { game: GameApi }) {
         size={rules.gridSize}
         label="Enemy waters"
         getCell={enemyCell}
+        ships={enemyShips}
         onCellClick={(coord) => humanTurn && fire(coord)}
         dimmed={!humanTurn && state.phase === 'playing'}
       />
@@ -93,7 +103,7 @@ export function GameScreen({ game }: { game: GameApi }) {
   )
   const myBoard = (mini = false) => (
     <ImpactShake event={latestBy('ai')}>
-      <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} mini={mini} />
+      <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} ships={myShips} mini={mini} />
     </ImpactShake>
   )
   const compact = layout !== 'wide'
