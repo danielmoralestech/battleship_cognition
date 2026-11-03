@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
 
+// A ~50-shot game; animated battle effects make headless WebKit too slow for it. effects.spec.ts covers them.
+test.use({ reducedMotion: 'reduce' })
+
 test('place a fleet, play a full game and see the result', async ({ page }) => {
   await page.goto('./?difficulty=easy')
   await page.evaluate(() => localStorage.clear())

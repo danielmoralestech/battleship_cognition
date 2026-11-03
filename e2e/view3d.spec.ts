@@ -2,6 +2,9 @@ import { expect, test } from '@playwright/test'
 
 type Hook = { enemyCellToScreen(row: number, col: number): { x: number; y: number } }
 
+// The 2D boards draw shot effects on their own canvases, marked with data-fx.
+const SCENE = 'canvas:not([data-fx])'
+
 test('?view=3d renders the battle in a WebGL canvas and fires on tap/click', async ({
   page,
   isMobile,
@@ -15,7 +18,7 @@ test('?view=3d renders the battle in a WebGL canvas and fires on tap/click', asy
   await page.getByRole('button', { name: 'Randomize' }).click()
   await page.getByRole('button', { name: 'Start battle' }).click()
 
-  const canvas = page.locator('canvas')
+  const canvas = page.locator(SCENE)
   await expect(canvas).toBeVisible()
   // The canvas starts at the default 300×150 until react-three-fiber measures its container.
   await expect.poll(async () => (await canvas.boundingBox())?.height ?? 0).toBeGreaterThan(300)
@@ -51,16 +54,16 @@ test('the game menu switches a 2D battle to 3D and the choice survives a reload'
 
   if (isMobile) await page.getByRole('button', { name: 'Game menu' }).click()
   await page.getByRole(isMobile ? 'menuitem' : 'button', { name: '3D view' }).click()
-  await expect(page.locator('canvas')).toBeVisible()
+  await expect(page.locator(SCENE)).toBeVisible()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 
   await page.reload()
-  await expect(page.locator('canvas')).toBeVisible()
+  await expect(page.locator(SCENE)).toBeVisible()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 
   await page.getByRole('button', { name: '2D view' }).click()
   await expect(page.getByRole('grid', { name: 'Enemy waters' })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('grid', { name: 'Enemy waters' })).toBeVisible()
-  await expect(page.locator('canvas')).toHaveCount(0)
+  await expect(page.locator(SCENE)).toHaveCount(0)
 })

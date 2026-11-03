@@ -1,9 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { canFire } from '../engine/game'
-import { coordKey, isShipSunk, sameCoord, shipAt } from '../engine/board'
+import { coordKey, isShipSunk, sameCoord, shipAt, shipCells } from '../engine/board'
 import { getTargetView } from '../engine/view'
 import type { Coord, PlayerId, ShotEvent } from '../engine/types'
-import { Announcer, ImpactShake, describeShot } from '../effects'
+import { Announcer, BoardFx, ImpactShake, ScreenFlash, describeShot } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
@@ -29,6 +29,16 @@ export function GameScreen({ game }: { game: GameApi }) {
     ship,
     sunk: isShipSunk(boards.human, ship),
   }))
+
+  const enemyGridRef = useRef<HTMLDivElement>(null)
+  const myGridRef = useRef<HTMLDivElement>(null)
+
+  const sunkCells = (e: ShotEvent | null): Coord[] => {
+    if (e?.result !== 'sunk') return []
+    if (e.by === 'human') return enemyView.sunkShips.find((s) => s.type === e.sunkShip)?.cells ?? []
+    const ship = boards.human.ships.find((s) => s.type === e.sunkShip)
+    return ship ? shipCells(ship) : []
+  }
 
   const isLatest = (by: PlayerId, coord: Coord) =>
     !!latest && latest.by === by && sameCoord(latest.coord, coord)
@@ -86,24 +96,53 @@ export function GameScreen({ game }: { game: GameApi }) {
             : 'Enemy is aiming...'}
       </p>
       <Announcer event={latest} rules={rules} compact={layout === 'landscape'} />
+      <ScreenFlash event={latest} />
     </div>
   )
 
+  const enemyAiming = state.phase === 'playing' && !humanTurn
   const enemyBoard = (
     <ImpactShake event={latestBy('human')}>
-      <Grid
-        size={rules.gridSize}
-        label="Enemy waters"
-        getCell={enemyCell}
-        ships={enemyShips}
-        onCellClick={(coord) => humanTurn && fire(coord)}
-        dimmed={!humanTurn && state.phase === 'playing'}
-      />
+      <BoardFx
+        event={latestBy('human')}
+        side="enemy"
+        gridRef={enemyGridRef}
+        sunkCells={sunkCells(latestBy('human'))}
+        sweep={humanTurn ? 'scan' : null}
+      >
+        <Grid
+          size={rules.gridSize}
+          label="Enemy waters"
+          getCell={enemyCell}
+          ships={enemyShips}
+          onCellClick={(coord) => humanTurn && fire(coord)}
+          dimmed={enemyAiming}
+          gridRef={enemyGridRef}
+        />
+      </BoardFx>
     </ImpactShake>
   )
   const myBoard = (mini = false) => (
     <ImpactShake event={latestBy('ai')}>
-      <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} ships={myShips} mini={mini} />
+      {mini ? (
+        <Grid size={rules.gridSize} label="Your fleet" getCell={myCell} ships={myShips} mini />
+      ) : (
+        <BoardFx
+          event={latestBy('ai')}
+          side="mine"
+          gridRef={myGridRef}
+          sunkCells={sunkCells(latestBy('ai'))}
+          sweep={enemyAiming ? 'threat' : null}
+        >
+          <Grid
+            size={rules.gridSize}
+            label="Your fleet"
+            getCell={myCell}
+            ships={myShips}
+            gridRef={myGridRef}
+          />
+        </BoardFx>
+      )}
     </ImpactShake>
   )
   const compact = layout !== 'wide'
