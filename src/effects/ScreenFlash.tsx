@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'motion/react'
+import { motion } from 'motion/react'
 import { useState } from 'react'
 import type { ShotEvent } from '../engine/types'
 import { SHELL_MS } from './timing'
@@ -6,8 +6,8 @@ import { SHELL_MS } from './timing'
 /** Brief full-screen flash when a ship goes down. */
 export function ScreenFlash({ event }: { event: ShotEvent | null }) {
   const [mountId] = useState(event?.id)
-  const reduced = useReducedMotion()
   if (!event || event.result !== 'sunk' || event.id === mountId) return null
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   return (
     <motion.div
       key={event.id}
