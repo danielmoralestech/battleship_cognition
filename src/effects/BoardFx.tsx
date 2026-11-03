@@ -1,4 +1,3 @@
-import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import type { Coord, ShotEvent } from '../engine/types'
 import { ParticleEngine, explosion, shell, splash } from './particles'
@@ -22,7 +21,6 @@ export function BoardFx({ event, side, gridRef, sunkCells, sweep, children }: Bo
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engine = useRef<ParticleEngine | null>(null)
   const played = useRef(event?.id)
-  const reduced = useReducedMotion()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -41,7 +39,7 @@ export function BoardFx({ event, side, gridRef, sunkCells, sweep, children }: Bo
     const canvas = canvasRef.current
     if (!event || event.id === played.current || !fx || !grid || !canvas) return
     played.current = event.id
-    if (reduced) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
 
     const origin = canvas.getBoundingClientRect()
     const centre = (c: Coord) => {
@@ -70,7 +68,7 @@ export function BoardFx({ event, side, gridRef, sunkCells, sweep, children }: Bo
         if (p) fx.after(120 + i * 90, () => fx.emit(explosion(p.x, p.y, p.s, true)))
       })
     })
-  }, [event, side, gridRef, sunkCells, reduced])
+  }, [event, side, gridRef, sunkCells])
 
   return (
     <div className="relative mx-auto w-full max-w-[26rem]">
