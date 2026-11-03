@@ -222,7 +222,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
           : e.deltaMode === WheelEvent.DOM_DELTA_LINE
             ? 16
             : 1
-      travel += Math.abs(e.deltaY || e.deltaX) * scale
+      travel += Math.max(Math.abs(e.deltaX), Math.abs(e.deltaY)) * scale
       if (rotated || travel < WHEEL_STEP) return
       rotated = true
       if (session.current?.active) return toggleOrientation()
