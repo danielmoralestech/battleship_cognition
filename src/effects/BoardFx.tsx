@@ -83,6 +83,7 @@ export function BoardFx({ event, side, gridRef, sunkCells, sweep, children }: Bo
       <canvas
         ref={canvasRef}
         aria-hidden="true"
+        data-fx="shots"
         className="pointer-events-none absolute inset-0 size-full"
       />
     </div>
