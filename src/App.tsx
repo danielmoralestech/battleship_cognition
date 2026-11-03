@@ -7,7 +7,7 @@ import { GameMenu } from './ui/GameMenu'
 import { GameOverModal } from './ui/GameOverModal'
 import { GameScreen } from './ui/GameScreen'
 import { SetupScreen } from './ui/SetupScreen'
-import { load3DView, wants3DView } from './ui/view3d'
+import { hasWebGL2, load3DView, wants3DView } from './ui/view3d'
 
 export default function App() {
   const game = useGame()
@@ -18,7 +18,7 @@ export default function App() {
   const battle3d = view3d && state.phase !== 'setup'
 
   useEffect(() => {
-    if (view3d) void load3DView().catch(() => {})
+    if (view3d && hasWebGL2()) void load3DView().catch(() => {})
   }, [view3d])
 
   return (
