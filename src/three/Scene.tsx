@@ -87,7 +87,11 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: Sc
     const defender: PlayerId = event.by === 'human' ? 'ai' : 'human'
     const [x, z] = cellToWorld(placements[defender], event.coord, size)
     const kind: BurstKind = event.result === 'miss' ? 'splash' : 'explosion'
-    setBursts((b) => [...b.slice(-3), { id: event.id, at: [x, 0.25, z], kind }])
+    setBursts((b) =>
+      b.some((x) => x.id === event.id)
+        ? b
+        : [...b.slice(-3), { id: event.id, at: [x, 0.25, z], kind }],
+    )
     if (kind === 'explosion' && !reduced) shake.current = event.result === 'sunk' ? 0.5 : 0.25
   }
 
