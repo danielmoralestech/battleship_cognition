@@ -58,6 +58,7 @@ export function Grid({
       onPointerLeave={(e) => e.pointerType === 'mouse' && onCellHover?.(null)}
     >
       <span aria-hidden="true" className="ocean-waves" />
+      <span aria-hidden="true" className="ocean-swell" />
       <span />
       {indices.map((c) => (
         <span key={c} className="text-center text-xs font-semibold text-sky-300/70">
