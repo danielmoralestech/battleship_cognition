@@ -48,11 +48,12 @@ interface SceneProps {
   fpsEl?: RefObject<HTMLElement | null>
 }
 
-/** Board shots with the in-flight shell's target removed, so results appear when it lands. */
-function landedBoard(board: Board, pending: ShotEvent | null, defender: PlayerId): Board {
-  if (!pending || pending.by === defender) return board
+/** Board shots without the shells still queued or in flight, so results appear when they land. */
+function landedBoard(board: Board, unlanded: ShotEvent[], defender: PlayerId): Board {
+  const incoming = unlanded.filter((e) => e.by !== defender)
+  if (!incoming.length) return board
   const shots = { ...board.shots }
-  delete shots[`${pending.coord.row},${pending.coord.col}`]
+  for (const e of incoming) delete shots[`${e.coord.row},${e.coord.col}`]
   return { ...board, shots }
 }
 
@@ -73,11 +74,12 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: Sc
   const [bursts, setBursts] = useState<ActiveBurst[]>([])
   const shake = useRef(0)
   if (landedId > lastId) setLandedId(lastId)
-  const pending = state.log.find((e) => e.id === landedId + 1) ?? null
+  const unlanded = state.log.filter((e) => e.id > landedId)
+  const pending = unlanded.find((e) => e.id === landedId + 1) ?? null
 
   const boards = {
-    ai: landedBoard(state.boards.ai, pending, 'ai'),
-    human: landedBoard(state.boards.human, pending, 'human'),
+    ai: landedBoard(state.boards.ai, unlanded, 'ai'),
+    human: landedBoard(state.boards.human, unlanded, 'human'),
   }
 
   const land = (event: ShotEvent) => {
