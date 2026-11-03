@@ -34,7 +34,12 @@ export function Battle3DLoader({ game, onExit }: { game: GameApi; onExit: () => 
   const [supported] = useState(hasWebGL2)
   const fallback = (reason: string) => (
     <>
-      <Notice>{reason} Showing the 2D board instead.</Notice>
+      <Notice>
+        {reason} Showing the 2D board instead.{' '}
+        <button type="button" className="underline" onClick={onExit}>
+          Always use 2D
+        </button>
+      </Notice>
       <GameScreen game={game} />
     </>
   )
