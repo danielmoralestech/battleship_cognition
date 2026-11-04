@@ -22,7 +22,7 @@ export const TEAM_COLOR_NAMES = Object.keys(TEAM_COLORS) as TeamColor[]
 export const DEFAULT_FLEET_COLORS: FleetColors = { human: 'blue', ai: 'red' }
 
 export const isTeamColor = (value: unknown): value is TeamColor =>
-  typeof value === 'string' && value in TEAM_COLORS
+  typeof value === 'string' && Object.prototype.hasOwnProperty.call(TEAM_COLORS, value)
 
 export interface FleetColorsApi {
   colors: FleetColors

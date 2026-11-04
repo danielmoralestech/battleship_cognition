@@ -42,7 +42,7 @@ describe('team colors', () => {
 
   it('ignores unknown saved colors', () => {
     const data = stubStorage()
-    data.set('battleship:colors:v1', JSON.stringify({ human: 'pink', ai: 'white' }))
-    expect(loadColors()).toEqual({ human: 'blue', ai: 'white' })
+    data.set('battleship:colors:v1', JSON.stringify({ human: 'pink', ai: 'toString' }))
+    expect(loadColors()).toEqual({ human: 'blue', ai: 'red' })
   })
 })
