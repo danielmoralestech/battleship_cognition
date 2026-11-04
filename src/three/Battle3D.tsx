@@ -107,7 +107,7 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
 
       <div
         ref={topHud}
-        className="pointer-events-none relative z-[5] flex flex-col items-center gap-1 pb-1"
+        className="pointer-events-none relative z-[6] flex flex-col items-center gap-1 pb-1"
       >
         <p
           className={`font-semibold uppercase drop-shadow ${compact ? 'text-xs tracking-wide' : 'text-sm tracking-widest'} ${humanTurn ? 'text-amber-300' : 'text-slate-300'}`}
@@ -121,7 +121,7 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
                 : 'Your turn: switch to enemy waters'
               : 'Enemy is aiming...'}
         </p>
-        <Announcer event={latest} rules={rules} compact={compact} />
+        <Announcer event={latest} log={log} rules={rules} compact={compact} />
       </div>
 
       <div
