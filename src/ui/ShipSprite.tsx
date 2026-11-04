@@ -1,4 +1,6 @@
+import { motion } from 'motion/react'
 import { useId, type CSSProperties, type ReactNode } from 'react'
+import { wreckRevealMs } from '../effects/timing'
 import type { Orientation, PlacedShip, ShipType } from '../engine/types'
 import { hullPath, shipGridArea } from './shipGeometry'
 
@@ -12,6 +14,11 @@ export interface BoardShip {
   lifted?: boolean
   /** Placement preview: the candidate ship, tinted green or red. */
   preview?: ShipTone
+  /**
+   * Sunk by the latest shot: hold the wreck back until the shell has landed. `reveal` fades it in
+   * from nothing (a hidden enemy ship); `wreck` keeps the intact ship until then.
+   */
+  sinking?: 'reveal' | 'wreck'
 }
 
 /** SVG units per board cell. Sprites are drawn bow-right and rotated for vertical ships. */
@@ -451,24 +458,56 @@ export function ShipLayer({
   offset: number
   simple?: boolean
 }) {
-  return ships.map(({ ship, sunk, lifted, preview }) => (
-    <span
-      key={`${ship.type}${preview ? '-preview' : ''}`}
-      data-ship={ship.type}
-      data-sunk={sunk || undefined}
-      data-preview={preview}
-      className={`pointer-events-none absolute inset-0 z-[1] transition-opacity ${lifted ? 'opacity-40' : ''}`}
-      style={shipGridArea(ship, offset)}
-    >
+  return ships.map(({ ship, sunk, lifted, preview, sinking }) => {
+    const sprite = (wreck?: boolean) => (
       <ShipSprite
         type={ship.type}
         length={ship.length}
         orientation={ship.orientation}
-        sunk={sunk}
+        sunk={wreck}
         tone={preview}
         simple={simple}
         className="size-full"
       />
-    </span>
-  ))
+    )
+    const fade = sunk &&
+      sinking && {
+        delay: wreckRevealMs(ship.length) / 1000,
+        duration: 0.35,
+      }
+    return (
+      <span
+        key={`${ship.type}${preview ? '-preview' : ''}`}
+        data-ship={ship.type}
+        data-sunk={sunk || undefined}
+        data-preview={preview}
+        className={`pointer-events-none absolute inset-0 z-[1] transition-opacity ${lifted ? 'opacity-40' : ''}`}
+        style={shipGridArea(ship, offset)}
+      >
+        {fade && sinking === 'wreck' && (
+          <motion.span
+            className="absolute inset-0"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={fade}
+          >
+            {sprite(false)}
+          </motion.span>
+        )}
+        {fade ? (
+          <motion.span
+            data-wreck-reveal=""
+            className="absolute inset-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={fade}
+          >
+            {sprite(true)}
+          </motion.span>
+        ) : (
+          sprite(sunk)
+        )}
+      </span>
+    )
+  })
 }

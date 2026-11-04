@@ -5,7 +5,7 @@ import { getTargetView } from '../engine/view'
 import type { Coord, PlayerId, ShotEvent } from '../engine/types'
 import { Announcer, BoardFx, ImpactShake, ScreenFlash, describeShot } from '../effects'
 import type { GameApi } from '../hooks/useGame'
-import { useBattleLayout } from '../hooks/useMediaQuery'
+import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
 import { Grid, type CellView } from './Grid'
 import type { BoardShip } from './ShipSprite'
@@ -22,12 +22,27 @@ export function GameScreen({ game }: { game: GameApi }) {
   const enemyView = getTargetView(boards.ai, rules)
   const revealEnemy = state.phase === 'gameOver'
   const announcedSunk = new Set(enemyView.sunkShips.map((s) => s.type))
+  // Shots restored from storage, and reduced motion, play no shell, so their wrecks show at once.
+  const [restoredShot] = useState(() => latest?.id ?? 0)
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const justSunk = (by: PlayerId) => {
+    const e = latestBy(by)
+    if (reducedMotion || !e || e.id <= restoredShot) return undefined
+    return e.result === 'sunk' ? e.sunkShip : undefined
+  }
+  const enemyJustSunk = justSunk('human')
+  const myJustSunk = justSunk('ai')
   const enemyShips: BoardShip[] = boards.ai.ships
     .filter((ship) => revealEnemy || announcedSunk.has(ship.type))
-    .map((ship) => ({ ship, sunk: isShipSunk(boards.ai, ship) }))
+    .map((ship) => ({
+      ship,
+      sunk: isShipSunk(boards.ai, ship),
+      sinking: ship.type === enemyJustSunk ? 'reveal' : undefined,
+    }))
   const myShips: BoardShip[] = boards.human.ships.map((ship) => ({
     ship,
     sunk: isShipSunk(boards.human, ship),
+    sinking: ship.type === myJustSunk ? 'wreck' : undefined,
   }))
 
   const enemyGridRef = useRef<HTMLDivElement>(null)
