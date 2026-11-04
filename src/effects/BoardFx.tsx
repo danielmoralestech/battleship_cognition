@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import type { Coord, ShotEvent } from '../engine/types'
 import { ParticleEngine, explosion, shell, splash } from './particles'
-import { SHELL_MS } from './timing'
+import { SHELL_MS, SINK_CHAIN_MS } from './timing'
 
 interface BoardFxProps {
   /** Latest shot fired at this board. */
@@ -65,7 +65,7 @@ export function BoardFx({ event, side, gridRef, sunkCells, sweep, children }: Bo
       if (event.result !== 'sunk') return
       sunkCells.forEach((c, i) => {
         const p = centre(c)
-        if (p) fx.after(120 + i * 90, () => fx.emit(explosion(p.x, p.y, p.s, true)))
+        if (p) fx.after(120 + i * SINK_CHAIN_MS, () => fx.emit(explosion(p.x, p.y, p.s, true)))
       })
     })
   }, [event, side, gridRef, sunkCells])

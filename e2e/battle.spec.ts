@@ -112,6 +112,10 @@ test('ships are drawn as sprites and sunk enemy ships become wrecks', async ({ p
   }
 
   const wreck = enemy(page).locator('[data-ship="destroyer"][data-sunk="true"]')
+  const reveal = wreck.locator('[data-wreck-reveal]')
+  const opacity = () => reveal.evaluate((el) => Number(getComputedStyle(el).opacity))
+  expect(await opacity()).toBeLessThan(1)
+  await expect.poll(opacity).toBe(1)
   await expect(wreck).toBeVisible()
   await expect(wreck.locator('[data-wreck]')).toHaveCount(1)
   expect(await wreck.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none')

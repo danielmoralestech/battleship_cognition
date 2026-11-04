@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { PlacedShip } from '../engine/types'
 import { Grid } from './Grid'
-import { ShipSprite } from './ShipSprite'
+import { ShipLayer, ShipSprite } from './ShipSprite'
 import { shipGridArea } from './shipGeometry'
 
 const carrier: PlacedShip = {
@@ -65,5 +65,29 @@ describe('Grid ship layer', () => {
     for (const s of sprites) expect(s).toContain('pointer-events-none')
     expect(html).toMatch(/data-ship="carrier"[^>]*grid-row:4 \/ span 1;grid-column:5 \/ span 5/)
     expect(html).toMatch(/data-ship="submarine" data-sunk="true"/)
+  })
+})
+
+describe('ShipLayer', () => {
+  const sunkSub = { ship: sub, sunk: true }
+
+  it('holds a just-sunk wreck back until the shell lands', () => {
+    const revealed = renderToStaticMarkup(
+      <ShipLayer ships={[{ ...sunkSub, sinking: 'reveal' }]} offset={0} />,
+    )
+    expect(revealed).toMatch(/data-wreck-reveal="" class="absolute inset-0" style="opacity:0"/)
+    expect(revealed.match(/<svg/g)).toHaveLength(1)
+
+    const own = renderToStaticMarkup(
+      <ShipLayer ships={[{ ...sunkSub, sinking: 'wreck' }]} offset={0} />,
+    )
+    expect(own.match(/<svg/g)).toHaveLength(2)
+    expect(own.match(/data-wreck=/g)).toHaveLength(1)
+  })
+
+  it('draws older wrecks straight away', () => {
+    const h = renderToStaticMarkup(<ShipLayer ships={[sunkSub]} offset={0} />)
+    expect(h).not.toContain('data-wreck-reveal')
+    expect(h).toContain('data-wreck')
   })
 })
