@@ -36,7 +36,7 @@ function create(): AudioContext | null {
 
 /** Browsers, iPhone Safari especially, only let audio start inside a user gesture. */
 function unlock() {
-  if (!enabled) return
+  // Runs even while muted, so switching Sound on later can play without waiting for another tap.
   const c = ctx ?? create()
   if (!c) return
   if (c.state !== 'running') {
