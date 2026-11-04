@@ -2,6 +2,7 @@ import type {
   Board,
   Coord,
   CoordKey,
+  Facing,
   Orientation,
   PlacedShip,
   Rng,
@@ -24,6 +25,43 @@ export const sameCoord = (a: Coord, b: Coord) => a.row === b.row && a.col === b.
 
 export const inBounds = (c: Coord, size: number) =>
   c.row >= 0 && c.col >= 0 && c.row < size && c.col < size
+
+const FACINGS: Facing[] = ['north', 'east', 'south', 'west']
+
+/** 1 turns clockwise, -1 anticlockwise. */
+export type Turn = 1 | -1
+
+export const facingOf = (ship: Pick<PlacedShip, 'orientation' | 'facing'>): Facing =>
+  ship.facing ?? (ship.orientation === 'horizontal' ? 'east' : 'north')
+
+export const orientationOf = (facing: Facing): Orientation =>
+  facing === 'east' || facing === 'west' ? 'horizontal' : 'vertical'
+
+export const turnFacing = (facing: Facing, turn: Turn): Facing =>
+  FACINGS[(FACINGS.indexOf(facing) + turn + 4) % 4]
+
+/** Index of the stern segment, counted from the ship's origin. */
+export const sternIndex = (facing: Facing, length: number) =>
+  facing === 'east' || facing === 'south' ? 0 : length - 1
+
+/**
+ * Turns a ship 90° about its `grabIndex`-th segment. Returns the new shape and the
+ * index that segment has after the turn (cells are always counted from the origin).
+ */
+export function turnShape(
+  ship: Pick<PlacedShip, 'length' | 'orientation' | 'facing'>,
+  grabIndex: number,
+  turn: Turn,
+): { orientation: Orientation; facing: Facing; grabIndex: number } {
+  const facing = turnFacing(facingOf(ship), turn)
+  // Rotating flips the order of the cells when vertical turns clockwise or horizontal turns back.
+  const flips = (turn === 1) === (ship.orientation === 'vertical')
+  return {
+    orientation: orientationOf(facing),
+    facing,
+    grabIndex: flips ? ship.length - 1 - grabIndex : grabIndex,
+  }
+}
 
 export function shipCells(ship: Pick<PlacedShip, 'origin' | 'orientation' | 'length'>): Coord[] {
   const { origin, orientation, length } = ship
@@ -80,7 +118,7 @@ export function upsertShip(ships: PlacedShip[], ship: PlacedShip): PlacedShip[] 
  * needed to keep it on the board.
  */
 export function anchorShip(
-  ship: Pick<PlacedShip, 'type' | 'length' | 'orientation'>,
+  ship: Pick<PlacedShip, 'type' | 'length' | 'orientation' | 'facing'>,
   cell: Coord,
   grabIndex: number,
   gridSize: number,
@@ -97,7 +135,14 @@ export function anchorShip(
       gridSize - (horizontal ? ship.length : 1),
     ),
   }
-  return { type: ship.type, length: ship.length, orientation: ship.orientation, origin }
+  const placed: PlacedShip = {
+    type: ship.type,
+    length: ship.length,
+    orientation: ship.orientation,
+    origin,
+  }
+  if (ship.facing) placed.facing = ship.facing
+  return placed
 }
 
 /** The valid placement of `candidate`'s ship (same orientation) closest to its origin. */
@@ -123,7 +168,7 @@ export function nearestValidPlacement(
 }
 
 /**
- * Rotates a placed ship 90° around `pivot` (one of its cells), nudging it to the
+ * Rotates a placed ship 90° (`turn`: 1 clockwise, -1 anticlockwise) around `pivot` (one of its cells), nudging it to the
  * nearest free spot if needed. Returns null when it cannot fit rotated anywhere.
  */
 export function rotateShip(
@@ -131,13 +176,14 @@ export function rotateShip(
   ship: PlacedShip,
   pivot: Coord,
   rules: RuleSet,
+  turn: Turn = 1,
 ): PlacedShip | null {
   const grabIndex = Math.max(
     0,
     shipCells(ship).findIndex((c) => sameCoord(c, pivot)),
   )
-  const orientation: Orientation = ship.orientation === 'horizontal' ? 'vertical' : 'horizontal'
-  const rotated = anchorShip({ ...ship, orientation }, pivot, grabIndex, rules.gridSize)
+  const turned = turnShape(ship, grabIndex, turn)
+  const rotated = anchorShip({ ...ship, ...turned }, pivot, turned.grabIndex, rules.gridSize)
   if (validatePlacement(others, rotated, rules) === null) return rotated
   return nearestValidPlacement(others, rotated, rules)
 }

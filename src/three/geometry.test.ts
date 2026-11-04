@@ -47,6 +47,20 @@ describe('3D board geometry', () => {
     expect([t.x, t.z]).toEqual(cellToWorld(boards.human, { row: 3, col: 3 }, 10))
   })
 
+  it('points the bow the way the ship faces', () => {
+    const ship = {
+      type: 'cruiser',
+      origin: { row: 2, col: 3 },
+      orientation: 'horizontal',
+      length: 3,
+    } as const
+    expect(shipTransform(boards.human, ship, 10).yaw).toBe(0)
+    expect(shipTransform(boards.human, { ...ship, facing: 'west' }, 10).yaw).toBe(Math.PI)
+    const vertical = { ...ship, orientation: 'vertical' } as const
+    expect(shipTransform(boards.human, vertical, 10).yaw).toBe(Math.PI / 2)
+    expect(shipTransform(boards.human, { ...vertical, facing: 'south' }, 10).yaw).toBe(-Math.PI / 2)
+  })
+
   it('moves the camera back on narrow screens so the whole board fits', () => {
     const framing = framingFor('portrait', 'ai', boardPlacements('portrait'), 10)
     const phone = framingDistance(framing, 390 / 664, 40)

@@ -133,13 +133,13 @@ test.describe('mouse placement', () => {
       await page.mouse.wheel(0, 100)
     }
     await wheelAt(cell(page, 'E5'))
-    await expect(rotate).toHaveAccessibleName('Rotate (currently vertical)')
+    await expect(rotate).toHaveAccessibleName('Rotate (facing south)')
     // A burst of deltas (one trackpad swipe) only turns the ship once.
     for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 20)
-    await expect(rotate).toHaveAccessibleName('Rotate (currently vertical)')
+    await expect(rotate).toHaveAccessibleName('Rotate (facing south)')
     await page.waitForTimeout(300)
     await page.mouse.wheel(0, -100)
-    await expect(rotate).toHaveAccessibleName('Rotate (currently horizontal)')
+    await expect(rotate).toHaveAccessibleName('Rotate (facing east)')
 
     await mouseDrag(page, chip(page, 'Carrier'), cell(page, 'E5'))
     await expectShip(page, ['C5', 'G5'], 'carrier')
@@ -147,7 +147,7 @@ test.describe('mouse placement', () => {
     await wheelAt(cell(page, 'E5'))
     await expectShip(page, ['E3', 'E7'], 'carrier')
     await expectShip(page, ['C5', 'G5'], null)
-    await expect(rotate).toHaveAccessibleName('Rotate (currently horizontal)')
+    await expect(rotate).toHaveAccessibleName('Rotate (facing east)')
 
     const from = await center(chip(page, 'Battleship'))
     const to = await center(cell(page, 'B8'))
@@ -159,6 +159,44 @@ test.describe('mouse placement', () => {
     await page.mouse.up()
     await expectShip(page, ['B6', 'B9'], 'battleship')
     await expectShip(page, ['A8', 'C8'], null)
+  })
+
+  test('the wheel turns ships all the way round, and back', async ({ page }) => {
+    const carrier = board(page).locator('[data-ship="carrier"]:not([data-preview])')
+    const preview = board(page).locator('[data-ship="carrier"][data-preview]')
+    const turn = async (target: Locator, dy: number) => {
+      const c = await center(target)
+      await page.mouse.move(c.x, c.y)
+      await page.mouse.wheel(0, dy)
+      await page.waitForTimeout(250)
+    }
+
+    await turn(cell(page, 'E5'), 100)
+    await expect(preview).toHaveAttribute('data-facing', 'south')
+    await expectShip(page, ['E5', 'E9'], null)
+    for (const facing of ['west', 'north', 'east'])
+      await turn(cell(page, 'E5'), 100).then(() =>
+        expect(preview).toHaveAttribute('data-facing', facing),
+      )
+
+    await cell(page, 'E5').click()
+    await expectShip(page, ['E5', 'I5'], 'carrier')
+    await expect(carrier).toHaveAttribute('data-facing', 'east')
+    const steps: [string, string[]][] = [
+      ['south', ['E5', 'E9']],
+      ['west', ['A5', 'E5']],
+      ['north', ['E1', 'E5']],
+      ['east', ['E5', 'I5']],
+    ]
+    // Each turn swings the ship a quarter-turn around E5, like a clock hand.
+    for (const [facing, [a, b]] of steps) {
+      await turn(cell(page, 'E5'), 100)
+      await expect(carrier).toHaveAttribute('data-facing', facing)
+      await expectShip(page, [a, b], 'carrier')
+    }
+    await turn(cell(page, 'E5'), -100)
+    await expect(carrier).toHaveAttribute('data-facing', 'north')
+    await expectShip(page, ['E1', 'E5'], 'carrier')
   })
 
   test('the wheel over the board does not scroll the page', async ({ page }) => {
