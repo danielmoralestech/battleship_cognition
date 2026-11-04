@@ -121,7 +121,7 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
                 : 'Your turn: switch to enemy waters'
               : 'Enemy is aiming...'}
         </p>
-        <Announcer event={latest} rules={rules} compact={compact} />
+        <Announcer event={latest} log={log} rules={rules} compact={compact} />
       </div>
 
       <div

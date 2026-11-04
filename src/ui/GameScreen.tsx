@@ -3,7 +3,7 @@ import { canFire } from '../engine/game'
 import { coordKey, isShipSunk, sameCoord, shipAt, shipCells } from '../engine/board'
 import { getTargetView } from '../engine/view'
 import type { Coord, PlayerId, ShotEvent } from '../engine/types'
-import { Announcer, BoardFx, ImpactShake, ScreenFlash, describeShot } from '../effects'
+import { Announcer, BoardFx, ImpactShake, ScreenFlash, ShotLog } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
@@ -114,7 +114,7 @@ export function GameScreen({ game }: { game: GameApi }) {
             ? 'Your turn: fire at enemy waters'
             : 'Enemy is aiming...'}
       </p>
-      <Announcer event={latest} rules={rules} compact={layout === 'landscape'} />
+      <Announcer event={latest} log={log} rules={rules} compact={layout === 'landscape'} />
       <ScreenFlash event={latest} />
     </div>
   )
@@ -216,7 +216,6 @@ export function GameScreen({ game }: { game: GameApi }) {
             </p>
           </div>
         </section>
-        <BattleLog game={game} collapsible />
         {fleetOpen && <FleetSheet onClose={() => setFleetOpen(false)}>{myBoard()}</FleetSheet>}
       </div>
     )
@@ -239,7 +238,6 @@ export function GameScreen({ game }: { game: GameApi }) {
             <br />
             Enemy: {theirs.shots} shots, {theirs.accuracy}%
           </p>
-          <BattleLog game={game} collapsible />
         </div>
         <section aria-label="Your fleet" className={boardWidth}>
           {myBoard()}
@@ -270,35 +268,15 @@ export function GameScreen({ game }: { game: GameApi }) {
   )
 }
 
-function BattleLog({ game, collapsible }: { game: GameApi; collapsible?: boolean }) {
+function BattleLog({ game }: { game: GameApi }) {
   const { log, rules } = game.state
-  const entries = (n: number) =>
-    log
-      .slice(-n)
-      .reverse()
-      .map((e) => (
-        <li key={e.id}>
-          <span className={e.by === 'human' ? 'text-sky-300' : 'text-rose-300'}>
-            {e.by === 'human' ? 'You' : 'Enemy'}
-          </span>{' '}
-          {describeShot(e, rules).text}
-        </li>
-      ))
-  const list = (n: number) => (
-    <ol
-      className="w-full max-w-2xl space-y-0.5 text-center text-xs text-slate-400"
-      aria-label="Battle log"
-    >
-      {entries(n)}
-    </ol>
-  )
-  if (!collapsible) return list(6)
-  if (log.length === 0) return null
   return (
-    <details className="w-full max-w-[26rem] rounded-lg border border-slate-800 px-3 py-2 text-xs">
-      <summary className="cursor-pointer text-slate-300">Battle log ({log.length} shots)</summary>
-      <div className="mt-2">{list(20)}</div>
-    </details>
+    <ShotLog
+      log={log}
+      rules={rules}
+      limit={6}
+      className="w-full max-w-2xl text-center text-slate-400"
+    />
   )
 }
 
