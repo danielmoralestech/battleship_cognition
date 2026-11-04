@@ -47,6 +47,17 @@ test.describe('phone layouts', () => {
     }
   }
 
+  test('setup on a short, narrow landscape screen leaves room for the controls', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 667, height: 500 })
+    await open(page, false)
+    await expect(page.getByRole('grid', { name: 'Your fleet placement' })).toBeInViewport({
+      ratio: 1,
+    })
+    expect((await overflow(page)).x).toBe(0)
+  })
+
   for (const phone of PHONES.filter((p) => p.width > p.height)) {
     test(`setup board fits beside the controls: ${phone.name}`, async ({ page }) => {
       await page.setViewportSize(phone)

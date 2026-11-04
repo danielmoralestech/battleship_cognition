@@ -445,7 +445,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
       <section
         className={
           landscape
-            ? 'sticky top-0 col-start-1 row-span-4 row-start-1 w-[min(26rem,calc(100dvh-5.5rem))] self-start'
+            ? 'sticky top-0 col-start-1 row-span-4 row-start-1 w-[min(26rem,calc(100dvh-5.5rem),calc(100vw-23.5rem))] self-start'
             : 'flex flex-col items-center gap-3 lg:col-start-1 lg:row-start-2 lg:row-span-4'
         }
       >
