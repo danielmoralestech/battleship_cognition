@@ -1,20 +1,17 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Celebration } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 
-/** `holdMs` keeps the result hidden a little longer, e.g. while the 3D view's last shell lands. */
-export function GameOverModal({ game, holdMs = 0 }: { game: GameApi; holdMs?: number }) {
+/** `hold` keeps the result hidden, e.g. while the 3D view's final shell is still in flight. */
+export function GameOverModal({ game, hold = false }: { game: GameApi; hold?: boolean }) {
   const { state, stats, playAgain } = game
-  const over = state.phase === 'gameOver'
   const [dismissed, setDismissed] = useState(false)
-  const [held, setHeld] = useState(holdMs > 0)
-  useEffect(() => {
-    if (!over || !held) return
-    const t = setTimeout(() => setHeld(false), holdMs)
-    return () => clearTimeout(t)
-  }, [over, held, holdMs])
-  const open = over && !dismissed && !held
+  const [wasHeld, setWasHeld] = useState(hold)
+  if (hold && !wasHeld) setWasHeld(true)
+  const open = state.phase === 'gameOver' && !dismissed && !hold
+  // After a held 3D finish, leave time for the sinking blast before the dialog covers it.
+  const delay = wasHeld ? 1 : 0.6
   const won = state.winner === 'human'
   const shots = state.log.filter((e) => e.by === 'human')
   const hits = shots.filter((e) => e.result !== 'miss').length
@@ -30,7 +27,7 @@ export function GameOverModal({ game, holdMs = 0 }: { game: GameApi; holdMs?: nu
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay }}
           >
             <motion.div
               role="dialog"
@@ -39,7 +36,7 @@ export function GameOverModal({ game, holdMs = 0 }: { game: GameApi; holdMs?: nu
               className="w-full max-w-sm rounded-2xl border border-sky-700 bg-slate-900 p-6 text-center shadow-2xl"
               initial={{ y: 40, scale: 0.9 }}
               animate={{ y: 0, scale: 1 }}
-              transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 20 }}
+              transition={{ delay, type: 'spring', stiffness: 260, damping: 20 }}
             >
               <h2
                 id="game-over-title"

@@ -48,6 +48,8 @@ interface SceneProps {
   fpsEl?: RefObject<HTMLElement | null>
   /** Fleet accent color (hex) per player. */
   teams: Record<PlayerId, string>
+  /** Reports the last shot whose shell has landed, and null on unmount. */
+  onLanded?: (id: number | null) => void
 }
 
 /** Board shots without the shells still queued or in flight, so results appear when they land. */
@@ -69,7 +71,17 @@ interface ActiveBurst {
 
 const SUNK_STAGGER = 0.14
 
-export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl, teams }: SceneProps) {
+export function Scene({
+  state,
+  fire,
+  layout,
+  focus,
+  reduced,
+  insets,
+  fpsEl,
+  teams,
+  onLanded,
+}: SceneProps) {
   const size = state.rules.gridSize
   const placements = useMemo(() => boardPlacements(layout), [layout])
   const waveAmp = reduced ? 0.025 : 0.07
@@ -82,6 +94,8 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl, team
   if (landedId > lastId) setLandedId(lastId)
   const unlanded = state.log.filter((e) => e.id > landedId)
   const pending = unlanded.find((e) => e.id === landedId + 1) ?? null
+  useEffect(() => onLanded?.(landedId), [landedId, onLanded])
+  useEffect(() => () => onLanded?.(null), [onLanded])
 
   const boards = {
     ai: landedBoard(state.boards.ai, unlanded, 'ai'),

@@ -20,6 +20,10 @@ export default function App() {
   const [webgl2] = useState(hasWebGL2)
   const view3d = view === '3d'
   const battle3d = view3d && state.phase !== 'setup'
+  // Last shot id whose 3D shell has landed; null while the 3D scene isn't mounted.
+  const [landed3d, setLanded3d] = useState<number | null>(null)
+  const lastShotId = state.log.length ? state.log[state.log.length - 1].id : 0
+  const shellsInFlight = landed3d !== null && landed3d < lastShotId
   const setView = (next: ViewMode) => {
     rememberView(next)
     setViewState(next)
@@ -75,7 +79,7 @@ export default function App() {
             {state.phase === 'setup' ? (
               <SetupScreen game={game} />
             ) : view3d ? (
-              <Battle3DLoader game={game} onExit={() => setView('2d')} />
+              <Battle3DLoader game={game} onExit={() => setView('2d')} onLanded={setLanded3d} />
             ) : (
               <GameScreen game={game} />
             )}
@@ -83,7 +87,7 @@ export default function App() {
           <GameOverModal
             key={state.phase === 'gameOver' ? 'over' : 'active'}
             game={game}
-            holdMs={battle3d ? 1200 : 0}
+            hold={shellsInFlight}
           />
         </div>
       </FleetColorsContext.Provider>

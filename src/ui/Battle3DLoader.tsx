@@ -30,7 +30,15 @@ function Notice({ children }: { children: ReactNode }) {
 }
 
 /** Loads the 3D battle view on demand; falls back to the 2D screen without WebGL 2. */
-export function Battle3DLoader({ game, onExit }: { game: GameApi; onExit: () => void }) {
+export function Battle3DLoader({
+  game,
+  onExit,
+  onLanded,
+}: {
+  game: GameApi
+  onExit: () => void
+  onLanded?: (id: number | null) => void
+}) {
   const [supported] = useState(hasWebGL2)
   const fallback = (reason: string) => (
     <>
@@ -49,7 +57,7 @@ export function Battle3DLoader({ game, onExit }: { game: GameApi; onExit: () => 
       <Suspense
         fallback={<p className="py-24 text-center text-sm text-slate-400">Loading 3D view…</p>}
       >
-        <Battle3D game={game} onExit={onExit} />
+        <Battle3D game={game} onExit={onExit} onLanded={onLanded} />
       </Suspense>
     </Fallback>
   )

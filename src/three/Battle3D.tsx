@@ -13,7 +13,15 @@ import { CAMERA_FOV, Scene, type HudInsets } from './Scene'
 const MAX_DPR = 2
 
 /** Experimental three.js battle view (`?view=3d`). Fleet placement stays on the 2D screen. */
-export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () => void }) {
+export default function Battle3D({
+  game,
+  onExit,
+  onLanded,
+}: {
+  game: GameApi
+  onExit: () => void
+  onLanded?: (id: number | null) => void
+}) {
   const { state, fire } = game
   const teamHex = useTeamHex()
   const teams = { human: teamHex('human'), ai: teamHex('ai') }
@@ -100,6 +108,7 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
               insets={insets}
               fpsEl={showFps ? fpsEl : undefined}
               teams={teams}
+              onLanded={onLanded}
             />
           </Canvas>
         )}
