@@ -40,8 +40,9 @@ export function Announcer({
     }
     // Some controls (the 3D header) sit above the backdrop, so swallow outside clicks here too.
     const onClick = (e: MouseEvent) => {
-      const target = e.target as Node
+      const target = e.target as Element
       if (button.current?.contains(target) || panel.current?.contains(target)) return
+      if (target.closest?.('[aria-modal="true"]')) return
       e.preventDefault()
       e.stopPropagation()
       setOpen(false)
