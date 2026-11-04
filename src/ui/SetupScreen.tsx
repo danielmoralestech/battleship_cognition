@@ -22,7 +22,7 @@ import { Grid, type CellView } from './Grid'
 import { measureGrid } from './gridMetrics'
 import { ShipSprite, type BoardShip } from './ShipSprite'
 import { TEAM_COLOR_NAMES, TEAM_COLORS, useFleetColors, type TeamColor } from './teamColors'
-import { useBattleLayout } from '../hooks/useMediaQuery'
+import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
 
 const DIFFICULTY_INFO: Record<Difficulty, string> = {
   easy: 'Fires at random.',
@@ -71,7 +71,9 @@ export function SetupScreen({ game }: { game: GameApi }) {
     game
   const { rules } = state
   const { colors, setColor } = useFleetColors()
-  const landscape = useBattleLayout() === 'landscape'
+  // Board beside the controls on a phone on its side, if the width leaves the board at least 12rem.
+  const roomBeside = useMediaQuery('(min-width: 568px)')
+  const landscape = useBattleLayout() === 'landscape' && roomBeside
   const myTeam = TEAM_COLORS[colors.human]
   const ships = state.boards.human.ships
   const firstUnplaced = rules.fleet.find((s) => !ships.some((p) => p.type === s.type))?.type ?? null

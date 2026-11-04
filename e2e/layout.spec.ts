@@ -58,6 +58,18 @@ test.describe('phone layouts', () => {
     expect((await overflow(page)).x).toBe(0)
   })
 
+  test('setup on a tiny landscape screen falls back to the stacked layout', async ({ page }) => {
+    await page.setViewportSize({ width: 400, height: 300 })
+    await open(page, false)
+    const cell = (await page
+      .getByRole('grid', { name: 'Your fleet placement' })
+      .locator('button')
+      .first()
+      .boundingBox())!
+    expect(cell.width).toBeGreaterThanOrEqual(24)
+    expect((await overflow(page)).x).toBe(0)
+  })
+
   for (const phone of PHONES.filter((p) => p.width > p.height)) {
     test(`setup board fits beside the controls: ${phone.name}`, async ({ page }) => {
       await page.setViewportSize(phone)
