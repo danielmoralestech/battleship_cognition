@@ -12,7 +12,7 @@ import {
   Vector3,
 } from 'three'
 import { canFire } from '../engine/game'
-import { isShipSunk, parseCoordKey } from '../engine/board'
+import { isShipSunk, parseCoordKey, shipCells } from '../engine/board'
 import type { Board, Coord, GameState, PlayerId, ShotEvent } from '../engine/types'
 import type { BattleLayout } from '../hooks/useMediaQuery'
 import { Burst, FireField, Shell, type BurstKind, type Vec3 } from './effects'
@@ -58,10 +58,14 @@ function landedBoard(board: Board, unlanded: ShotEvent[], defender: PlayerId): B
 }
 
 interface ActiveBurst {
-  id: number
+  id: string
+  event: number
   at: Vec3
   kind: BurstKind
+  delay: number
 }
+
+const SUNK_STAGGER = 0.14
 
 export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: SceneProps) {
   const size = state.rules.gridSize
@@ -85,14 +89,40 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: Sc
   const land = (event: ShotEvent) => {
     setLandedId(event.id)
     const defender: PlayerId = event.by === 'human' ? 'ai' : 'human'
-    const [x, z] = cellToWorld(placements[defender], event.coord, size)
-    const kind: BurstKind = event.result === 'miss' ? 'splash' : 'explosion'
-    setBursts((b) =>
-      b.some((x) => x.id === event.id)
-        ? b
-        : [...b.slice(-3), { id: event.id, at: [x, 0.25, z], kind }],
-    )
-    if (kind === 'explosion' && !reduced) shake.current = event.result === 'sunk' ? 0.5 : 0.25
+    const at = (coord: Coord): Vec3 => {
+      const [x, z] = cellToWorld(placements[defender], coord, size)
+      return [x, 0.25, z]
+    }
+    const sunkShip =
+      event.result === 'sunk'
+        ? state.boards[defender].ships.find((s) => s.type === event.sunkShip)
+        : undefined
+    // A sinking ship erupts along its whole hull, starting from the cell that was hit.
+    const added: ActiveBurst[] = sunkShip
+      ? shipCells(sunkShip)
+          .map((c) => ({
+            c,
+            d: Math.abs(c.row - event.coord.row) + Math.abs(c.col - event.coord.col),
+          }))
+          .sort((a, b) => a.d - b.d)
+          .map(({ c }, i) => ({
+            id: `${event.id}:${i}`,
+            event: event.id,
+            at: at(c),
+            kind: 'sunk',
+            delay: reduced ? 0 : i * SUNK_STAGGER,
+          }))
+      : [
+          {
+            id: `${event.id}`,
+            event: event.id,
+            at: at(event.coord),
+            kind: event.result === 'miss' ? 'splash' : 'explosion',
+            delay: 0,
+          },
+        ]
+    setBursts((b) => (b.some((x) => x.event === event.id) ? b : [...b.slice(-3), ...added]))
+    if (event.result !== 'miss' && !reduced) shake.current = sunkShip ? 0.7 : 0.25
   }
 
   const launchPoint = (event: ShotEvent): Vec3 => {
@@ -212,6 +242,7 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: Sc
           key={b.id}
           at={b.at}
           kind={b.kind}
+          delay={b.delay}
           reduced={reduced}
           onDone={() => setBursts((all) => all.filter((x) => x.id !== b.id))}
         />

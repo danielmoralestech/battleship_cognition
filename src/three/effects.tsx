@@ -176,11 +176,12 @@ function LoopingPoints({
   return <points geometry={geometry} material={material} frustumCulled={false} />
 }
 
-export type BurstKind = 'splash' | 'explosion'
+export type BurstKind = 'splash' | 'explosion' | 'sunk'
 
 const BURST = {
   splash: { life: 1.1, gravity: 9, colors: ['#e0f2fe', '#7dd3fc'], size: 0.22, additive: false },
   explosion: { life: 0.9, gravity: 4, colors: ['#fef08a', '#dc2626'], size: 0.4, additive: true },
+  sunk: { life: 1.4, gravity: 3, colors: ['#fde047', '#dc2626'], size: 0.6, additive: true },
 } as const
 
 function burstMaterial(kind: BurstKind) {
@@ -228,24 +229,35 @@ const ringGeometry = new RingGeometry(0.7, 1, 24)
 ringGeometry.rotateX(-Math.PI / 2)
 const flashGeometry = new SphereGeometry(0.5, 10, 8)
 
-/** One-shot splash (miss) or explosion (hit): particles + expanding ripple (+ flash on hits). */
+/**
+ * One-shot splash (miss), explosion (hit) or bigger fireball (one per cell of a sunk ship):
+ * particles + expanding ripple (+ flash on hits). `delay` (seconds) staggers a sinking sequence.
+ */
 export function Burst({
   at,
   kind,
   reduced,
+  delay = 0,
   onDone,
 }: {
   at: Vec3
   kind: BurstKind
   reduced: boolean
+  delay?: number
   onDone: () => void
 }) {
   const cfg = BURST[kind]
-  const count = reduced ? 8 : kind === 'explosion' ? 56 : 40
+  const sunk = kind === 'sunk'
+  const count = reduced ? 8 : sunk ? 44 : kind === 'explosion' ? 56 : 40
   const material = useMemo(() => burstMaterial(kind), [kind])
   const ringMat = useMemo(
-    () => new MeshBasicMaterial({ color: '#e0f2fe', transparent: true, depthWrite: false }),
-    [],
+    () =>
+      new MeshBasicMaterial({
+        color: sunk ? '#fb923c' : '#e0f2fe',
+        transparent: true,
+        depthWrite: false,
+      }),
+    [sunk],
   )
   const flashMat = useMemo(
     () =>
@@ -272,10 +284,11 @@ export function Burst({
         )
       } else {
         const up = seeded(i * 7 + 2)
+        const lift = kind === 'sunk' ? 1.6 : 1
         vel.set(
           [
             Math.cos(a) * (1 + r * 2.4) * speed,
-            (1 + up * 3) * speed,
+            (1 + up * 3) * lift * speed,
             Math.sin(a) * (1 + r * 2.4) * speed,
           ],
           i * 3,
@@ -302,18 +315,21 @@ export function Burst({
   const done = useRef(false)
   const ring = useRef<Mesh>(null)
   const flash = useRef<Mesh>(null)
+  const group = useRef<Group>(null)
   useFrame(({ clock }) => {
     if (start.current === null) start.current = clock.elapsedTime
-    const t = clock.elapsedTime - start.current
+    const t = clock.elapsedTime - start.current - delay
+    if (group.current) group.current.visible = t >= 0
+    if (t < 0) return
     material.uniforms.uT.value = t
     const u = Math.min(t / (cfg.life * 1.4), 1)
     if (ring.current) {
-      ring.current.scale.setScalar(0.25 + u * (reduced ? 0.6 : 1.1))
-      ringMat.opacity = (1 - u) * 0.7
+      ring.current.scale.setScalar(0.25 + u * (reduced ? 0.6 : sunk ? 2.2 : 1.1))
+      ringMat.opacity = (1 - u) * (sunk ? 0.9 : 0.7)
     }
     if (flash.current) {
-      const f = Math.min(t / 0.25, 1)
-      flash.current.scale.setScalar(0.3 + f * 0.9)
+      const f = Math.min(t / (sunk ? 0.4 : 0.25), 1)
+      flash.current.scale.setScalar(0.3 + f * (sunk ? 2 : 0.9))
       flashMat.opacity = 1 - f
     }
     if (t > cfg.life * 1.4 && !done.current) {
@@ -323,13 +339,13 @@ export function Burst({
   })
 
   return (
-    <>
+    <group ref={group} visible={delay <= 0}>
       <points geometry={geometry} material={material} frustumCulled={false} />
       <mesh ref={ring} geometry={ringGeometry} material={ringMat} position={[at[0], 0.08, at[2]]} />
-      {kind === 'explosion' && !reduced && (
+      {kind !== 'splash' && !reduced && (
         <mesh ref={flash} geometry={flashGeometry} material={flashMat} position={at} />
       )}
-    </>
+    </group>
   )
 }
 

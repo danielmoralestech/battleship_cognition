@@ -7,7 +7,9 @@ import {
   CylinderGeometry,
   ExtrudeGeometry,
   Group,
+  MeshBasicMaterial,
   MeshStandardMaterial,
+  PlaneGeometry,
   Shape,
 } from 'three'
 import type { PlacedShip, ShipType } from '../engine/types'
@@ -36,7 +38,25 @@ const SHARED = {
   dark: new MeshStandardMaterial({ color: '#1e293b', roughness: 0.8, flatShading: true }),
   stripe: new MeshStandardMaterial({ color: '#991b1b', roughness: 0.9, flatShading: true }),
 }
-const CHARRED = new MeshStandardMaterial({ color: '#292524', roughness: 1, flatShading: true })
+// Wrecks: a scorched, ember-lit hull that still reads against dark water, over a red footprint.
+const WRECK_HULL = new MeshStandardMaterial({
+  color: '#7c2d12',
+  emissive: '#9a3412',
+  emissiveIntensity: 0.45,
+  roughness: 1,
+  flatShading: true,
+})
+const WRECK_TOP = new MeshStandardMaterial({ color: '#57534e', roughness: 1, flatShading: true })
+const WRECK_FILL = new MeshBasicMaterial({
+  color: '#dc2626',
+  transparent: true,
+  opacity: 0.28,
+  depthWrite: false,
+})
+const WRECK_EDGE = new MeshBasicMaterial({ color: '#f87171', transparent: true, depthWrite: false })
+const footprint = new PlaneGeometry(1, 1)
+footprint.rotateX(-Math.PI / 2)
+const EDGE = 0.06
 const hullMaterials = new Map<ShipType, MeshStandardMaterial>()
 const hullMaterial = (type: ShipType) => {
   let m = hullMaterials.get(type)
@@ -181,21 +201,73 @@ export function ShipModel({
     const t = clock.elapsedTime
     sink.current = sunk ? Math.min(1, sink.current + dt * 0.6) : 0
     const k = sink.current
-    g.position.set(x, waveHeight(x, z, t, waveAmp) * 0.8 - k * 0.32, z)
+    // Settles low, listing and bow-down, but stays above the surface so it is recognisable.
+    g.position.set(x, waveHeight(x, z, t, waveAmp) * 0.8 - k * 0.08, z)
     g.rotation.set(
-      Math.sin(t * 1.2 + phase) * waveAmp * 0.5 + k * 0.28,
+      Math.sin(t * 1.2 + phase) * waveAmp * 0.5 + k * 0.22,
       yaw,
-      Math.sin(t * 0.9 + phase) * waveAmp * 0.25 - k * 0.06,
+      Math.sin(t * 0.9 + phase) * waveAmp * 0.25 - k * 0.1,
     )
   })
 
   const material = (key: MaterialKey) =>
-    sunk ? CHARRED : key === 'hull' ? hullMaterial(ship.type) : SHARED[key]
+    sunk
+      ? key === 'hull' || key === 'stripe'
+        ? WRECK_HULL
+        : WRECK_TOP
+      : key === 'hull'
+        ? hullMaterial(ship.type)
+        : SHARED[key]
 
   return (
-    <group ref={group} position={[x, 0, z]} rotation={[0, yaw, 0, 'YXZ']}>
-      {parts.map((p, i) => (
-        <mesh key={i} geometry={p.geometry} material={material(p.material)} position={p.position} />
+    <>
+      <group ref={group} position={[x, 0, z]} rotation={[0, yaw, 0, 'YXZ']}>
+        {parts.map((p, i) => (
+          <mesh
+            key={i}
+            geometry={p.geometry}
+            material={material(p.material)}
+            position={p.position}
+          />
+        ))}
+      </group>
+      {sunk && <WreckFootprint x={x} z={z} yaw={yaw} length={ship.length} />}
+    </>
+  )
+}
+
+/** Red outline over the sunk ship's cells, like the 2D board's sunk marking. */
+function WreckFootprint({
+  x,
+  z,
+  yaw,
+  length,
+}: {
+  x: number
+  z: number
+  yaw: number
+  length: number
+}) {
+  const w = length - 0.12
+  const d = 0.88
+  const edges: [number, number, number, number][] = [
+    [0, -d / 2, w, EDGE],
+    [0, d / 2, w, EDGE],
+    [-w / 2, 0, EDGE, d],
+    [w / 2, 0, EDGE, d],
+  ]
+  return (
+    <group position={[x, 0.09, z]} rotation={[0, yaw, 0]}>
+      <mesh geometry={footprint} material={WRECK_FILL} scale={[w, 1, d]} renderOrder={1} />
+      {edges.map(([ex, ez, sx, sz], i) => (
+        <mesh
+          key={i}
+          geometry={footprint}
+          material={WRECK_EDGE}
+          position={[ex, 0.005, ez]}
+          scale={[sx, 1, sz]}
+          renderOrder={2}
+        />
       ))}
     </group>
   )
