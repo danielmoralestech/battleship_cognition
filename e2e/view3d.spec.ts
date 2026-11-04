@@ -1,9 +1,18 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 type Hook = { enemyCellToScreen(row: number, col: number): { x: number; y: number } }
 
 // The 2D boards draw shot effects on their own canvases, marked with data-fx.
 const SCENE = 'canvas:not([data-fx])'
+
+// The view switch is the first game-menu item in both views (inline on wider screens).
+async function switchView(page: Page, isMobile: boolean, name: '2D view' | '3D view') {
+  if (isMobile) {
+    await page.getByRole('button', { name: 'Game menu' }).click()
+    await expect(page.getByRole('menuitem').first()).toHaveText(name)
+    await page.getByRole('menuitem', { name }).click()
+  } else await page.getByRole('button', { name }).click()
+}
 
 test('?view=3d renders the battle in a WebGL canvas and fires on tap/click', async ({
   page,
@@ -32,7 +41,7 @@ test('?view=3d renders the battle in a WebGL canvas and fires on tap/click', asy
   else await page.mouse.click(target.x, target.y)
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 
-  await page.getByRole('button', { name: '2D view' }).click()
+  await switchView(page, isMobile, '2D view')
   await expect(page.getByRole('grid', { name: 'Enemy waters' })).toBeVisible()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 })
@@ -52,8 +61,7 @@ test('the game menu switches a 2D battle to 3D and the choice survives a reload'
   await page.getByRole('grid', { name: 'Enemy waters' }).getByRole('gridcell').first().click()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 
-  if (isMobile) await page.getByRole('button', { name: 'Game menu' }).click()
-  await page.getByRole(isMobile ? 'menuitem' : 'button', { name: '3D view' }).click()
+  await switchView(page, isMobile, '3D view')
   await expect(page.locator(SCENE)).toBeVisible()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 
@@ -61,7 +69,7 @@ test('the game menu switches a 2D battle to 3D and the choice survives a reload'
   await expect(page.locator(SCENE)).toBeVisible()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 
-  await page.getByRole('button', { name: '2D view' }).click()
+  await switchView(page, isMobile, '2D view')
   await expect(page.getByRole('grid', { name: 'Enemy waters' })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('grid', { name: 'Enemy waters' })).toBeVisible()
