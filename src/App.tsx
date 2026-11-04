@@ -80,7 +80,11 @@ export default function App() {
               <GameScreen game={game} />
             )}
           </main>
-          <GameOverModal key={state.phase === 'gameOver' ? 'over' : 'active'} game={game} />
+          <GameOverModal
+            key={state.phase === 'gameOver' ? 'over' : 'active'}
+            game={game}
+            holdMs={battle3d ? 1200 : 0}
+          />
         </div>
       </FleetColorsContext.Provider>
     </MotionConfig>

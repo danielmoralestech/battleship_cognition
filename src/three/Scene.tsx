@@ -145,7 +145,8 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl, team
   }
 
   const humanTurn = state.phase === 'playing' && state.turn === 'human'
-  const reveal = state.phase === 'gameOver'
+  // Wait for the final shell to land so the last ship isn't revealed (or wrecked) early.
+  const reveal = state.phase === 'gameOver' && unlanded.length === 0
 
   const shipsFor = (owner: PlayerId) => {
     const board = boards[owner]

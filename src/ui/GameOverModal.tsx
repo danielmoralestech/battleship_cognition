@@ -1,12 +1,20 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Celebration } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 
-export function GameOverModal({ game }: { game: GameApi }) {
+/** `holdMs` keeps the result hidden a little longer, e.g. while the 3D view's last shell lands. */
+export function GameOverModal({ game, holdMs = 0 }: { game: GameApi; holdMs?: number }) {
   const { state, stats, playAgain } = game
+  const over = state.phase === 'gameOver'
   const [dismissed, setDismissed] = useState(false)
-  const open = state.phase === 'gameOver' && !dismissed
+  const [held, setHeld] = useState(holdMs > 0)
+  useEffect(() => {
+    if (!over || !held) return
+    const t = setTimeout(() => setHeld(false), holdMs)
+    return () => clearTimeout(t)
+  }, [over, held, holdMs])
+  const open = over && !dismissed && !held
   const won = state.winner === 'human'
   const shots = state.log.filter((e) => e.by === 'human')
   const hits = shots.filter((e) => e.result !== 'miss').length
