@@ -23,13 +23,4 @@ describe('getTargetView', () => {
     expect(view.sunkShips.map((s) => s.type)).toEqual(['destroyer'])
     expect(view.remainingShips.map((s) => s.type)).not.toContain('destroyer')
   })
-
-  it('does not reveal sinks when announceSinks is off', () => {
-    let board = receiveShot(board0, { row: 0, col: 0 }, 10).board
-    board = receiveShot(board, { row: 0, col: 1 }, 10).board
-    const view = getTargetView(board, { ...STANDARD_RULES, announceSinks: false })
-    expect(view.cells[0][0]).toBe('hit')
-    expect(view.sunkShips).toEqual([])
-    expect(view.remainingShips).toHaveLength(STANDARD_RULES.fleet.length)
-  })
 })

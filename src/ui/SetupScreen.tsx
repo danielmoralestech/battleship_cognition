@@ -62,6 +62,8 @@ interface DragView {
   y: number
   target: PlacedShip | null
   valid: boolean
+  /** The finger or mouse itself is over the board, wherever the lifted aim point is. */
+  overBoard: boolean
   cellSize: number
   pitch: number
 }
@@ -120,7 +122,9 @@ export function SetupScreen({ game }: { game: GameApi }) {
     if (!metrics) return null
     const x = s.pointerX
     const y = s.pointerY - (s.pointerType === 'touch' ? metrics.pitch * TOUCH_LIFT_CELLS : 0)
-    const cell = metrics.cellAt(x, y)
+    const under = metrics.cellAt(x, s.pointerY)
+    // Near the top edge the lifted point leaves the board while the finger is still on it: aim at row 1.
+    const cell = metrics.cellAt(x, y) ?? (under && { row: 0, col: under.col })
     const target = cell ? anchorShip(s, cell, s.grabIndex, rules.gridSize) : null
     return {
       session: s,
@@ -128,6 +132,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
       y,
       target,
       valid: !!target && validatePlacement(ships, target, rules) === null,
+      overBoard: !!under,
       cellSize: metrics.cellSize,
       pitch: metrics.pitch,
     }
@@ -172,7 +177,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
       const { commit, removeShip, setDrag } = latest.current
       const view = dragView.current
       if (view?.target && view.valid) commit(view.target)
-      else if (!view?.target && s.from === 'board') {
+      else if (view && !view.overBoard && s.from === 'board') {
         removeShip(s.type)
         setSelected(s.type)
       }

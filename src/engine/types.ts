@@ -23,7 +23,6 @@ export interface RuleSet {
   gridSize: number
   fleet: ShipSpec[]
   allowTouching: boolean
-  announceSinks: boolean
   extraShotOnHit: boolean
 }
 
