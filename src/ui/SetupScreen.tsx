@@ -21,6 +21,7 @@ import type { GameApi } from '../hooks/useGame'
 import { Grid, type CellView } from './Grid'
 import { measureGrid } from './gridMetrics'
 import { ShipSprite, type BoardShip } from './ShipSprite'
+import { TEAM_COLOR_NAMES, TEAM_COLORS, useFleetColors, type TeamColor } from './teamColors'
 
 const DIFFICULTY_INFO: Record<Difficulty, string> = {
   easy: 'Fires at random.',
@@ -68,6 +69,8 @@ export function SetupScreen({ game }: { game: GameApi }) {
   const { state, placeShip, removeShip, randomizeFleet, clearFleet, setDifficulty, startGame } =
     game
   const { rules } = state
+  const { colors, setColor } = useFleetColors()
+  const myTeam = TEAM_COLORS[colors.human]
   const ships = state.boards.human.ships
   const firstUnplaced = rules.fleet.find((s) => !ships.some((p) => p.type === s.type))?.type ?? null
 
@@ -322,7 +325,11 @@ export function SetupScreen({ game }: { game: GameApi }) {
     }
   }
 
-  const boardShips: BoardShip[] = ships.map((ship) => ({ ship, lifted: ship.type === liftedType }))
+  const boardShips: BoardShip[] = ships.map((ship) => ({
+    ship,
+    lifted: ship.type === liftedType,
+    team: myTeam,
+  }))
   if (preview.ship)
     boardShips.push({ ship: preview.ship, preview: preview.valid ? 'valid' : 'invalid' })
 
@@ -380,6 +387,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
                   <ShipSprite
                     type={spec.type}
                     length={spec.length}
+                    team={myTeam}
                     className={`h-3 shrink-0 lg:h-4 ${placed ? 'opacity-35 grayscale' : ''}`}
                     style={{ aspectRatio: spec.length }}
                   />
@@ -416,7 +424,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
         </div>
       </section>
 
-      <section className="flex flex-col items-center gap-3 lg:col-start-1 lg:row-start-2 lg:row-span-3">
+      <section className="flex flex-col items-center gap-3 lg:col-start-1 lg:row-start-2 lg:row-span-4">
         <div ref={boardScope} className="w-full">
           <Grid
             size={rules.gridSize}
@@ -475,7 +483,19 @@ export function SetupScreen({ game }: { game: GameApi }) {
         <p className="mt-2 text-xs text-slate-400">{DIFFICULTY_INFO[state.difficulty]}</p>
       </section>
 
-      <div className="sticky bottom-0 -mx-3 bg-slate-950/90 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:static lg:col-start-2 lg:row-start-4 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <section className="rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-4 lg:p-5">
+        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">Colors</h3>
+        <div className="flex flex-col gap-2">
+          <ColorPicker
+            label="Your fleet"
+            value={colors.human}
+            onChange={(c) => setColor('human', c)}
+          />
+          <ColorPicker label="Enemy fleet" value={colors.ai} onChange={(c) => setColor('ai', c)} />
+        </div>
+      </section>
+
+      <div className="sticky bottom-0 -mx-3 bg-slate-950/90 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:static lg:col-start-2 lg:row-start-5 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
         <button
           type="button"
           disabled={!complete}
@@ -508,6 +528,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
             type={drag.session.type}
             length={drag.session.length}
             orientation={drag.session.orientation}
+            team={myTeam}
             facing={drag.session.facing}
             style={
               drag.session.orientation === 'horizontal'
@@ -517,6 +538,43 @@ export function SetupScreen({ game }: { game: GameApi }) {
           />
         </div>
       )}
+    </div>
+  )
+}
+
+function ColorPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: TeamColor
+  onChange: (color: TeamColor) => void
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-slate-300">
+        {label}: <span className="font-semibold capitalize text-slate-100">{value}</span>
+      </p>
+      <div className="grid grid-cols-10 gap-1" role="radiogroup" aria-label={`${label} color`}>
+        {TEAM_COLOR_NAMES.map((c) => (
+          <button
+            key={c}
+            type="button"
+            role="radio"
+            aria-checked={value === c}
+            aria-label={c[0].toUpperCase() + c.slice(1)}
+            title={c[0].toUpperCase() + c.slice(1)}
+            onClick={() => onChange(c)}
+            className={`aspect-square min-h-7 rounded-md border-2 transition ${
+              value === c
+                ? 'border-amber-300 ring-2 ring-amber-300/60'
+                : 'border-slate-600 hover:border-slate-400'
+            }`}
+            style={{ backgroundColor: TEAM_COLORS[c] }}
+          />
+        ))}
+      </div>
     </div>
   )
 }

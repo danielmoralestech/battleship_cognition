@@ -91,3 +91,32 @@ describe('ShipLayer', () => {
     expect(h).toContain('data-wreck')
   })
 })
+
+describe('fleet colors', () => {
+  it('draws the team color as accents over the default steel art', () => {
+    const plain = renderToStaticMarkup(<ShipSprite type="destroyer" length={2} />)
+    const red = renderToStaticMarkup(<ShipSprite type="destroyer" length={2} team="#ef4444" />)
+    expect(plain).not.toContain('data-team')
+    expect(red).toContain('data-team="#ef4444"')
+    expect(red).toContain('#3b4a5e')
+    expect(red).toContain('#a3b1c2')
+  })
+
+  it('keeps accents on wrecks but not on placement previews', () => {
+    const team = '#14b8a6'
+    const h = renderToStaticMarkup(
+      <div className="grid">
+        <ShipLayer
+          offset={0}
+          ships={[
+            { ship: carrier, sunk: true, team },
+            { ship: sub, preview: 'valid', team },
+          ]}
+        />
+      </div>,
+    )
+    expect(h.match(/data-team=/g)).toHaveLength(1)
+    expect(h).toContain(`data-team="${team}"`)
+    expect(h).toContain(`stroke="${team}8c"`)
+  })
+})
