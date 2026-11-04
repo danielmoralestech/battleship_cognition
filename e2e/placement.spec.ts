@@ -123,6 +123,56 @@ test.describe('mouse placement', () => {
     await expectShip(page, ['A3', 'E3'], 'carrier')
   })
 
+  test('the mouse wheel rotates the preview, a placed ship and a dragged ship', async ({
+    page,
+  }) => {
+    const rotate = page.getByRole('button', { name: /^Rotate/ })
+    const wheelAt = async (target: Locator) => {
+      const c = await center(target)
+      await page.mouse.move(c.x, c.y)
+      await page.mouse.wheel(0, 100)
+    }
+    await wheelAt(cell(page, 'E5'))
+    await expect(rotate).toHaveAccessibleName('Rotate (currently vertical)')
+    // A burst of deltas (one trackpad swipe) only turns the ship once.
+    for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 20)
+    await expect(rotate).toHaveAccessibleName('Rotate (currently vertical)')
+    await page.waitForTimeout(300)
+    await page.mouse.wheel(0, -100)
+    await expect(rotate).toHaveAccessibleName('Rotate (currently horizontal)')
+
+    await mouseDrag(page, chip(page, 'Carrier'), cell(page, 'E5'))
+    await expectShip(page, ['C5', 'G5'], 'carrier')
+    await page.waitForTimeout(300)
+    await wheelAt(cell(page, 'E5'))
+    await expectShip(page, ['E3', 'E7'], 'carrier')
+    await expectShip(page, ['C5', 'G5'], null)
+    await expect(rotate).toHaveAccessibleName('Rotate (currently horizontal)')
+
+    const from = await center(chip(page, 'Battleship'))
+    const to = await center(cell(page, 'B8'))
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(to.x, to.y, { steps: 10 })
+    await page.waitForTimeout(300)
+    await page.mouse.wheel(0, 100)
+    await page.mouse.up()
+    await expectShip(page, ['B6', 'B9'], 'battleship')
+    await expectShip(page, ['A8', 'C8'], null)
+  })
+
+  test('the wheel over the board does not scroll the page', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 420 })
+    const c = await center(cell(page, 'E5'))
+    await page.mouse.move(c.x, c.y)
+    await page.mouse.wheel(0, 300)
+    await page.waitForTimeout(200)
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    await page.mouse.move(5, 5)
+    await page.mouse.wheel(0, 300)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  })
+
   test('ships are sprites and the placement preview is tinted by validity', async ({ page }) => {
     await cell(page, 'E5').hover()
     await expect(board(page).locator('[data-ship="carrier"][data-preview="valid"]')).toBeVisible()

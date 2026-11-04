@@ -26,6 +26,10 @@ const DIFFICULTY_INFO: Record<Difficulty, string> = {
 const DRAG_THRESHOLD = 8
 /** On touch, the dragged ship floats this many cells above the finger so it stays visible. */
 const TOUCH_LIFT_CELLS = 1.25
+/** Wheel travel (px) that counts as a deliberate turn of the wheel. */
+const WHEEL_STEP = 30
+/** A wheel gesture ends after this long without wheel events; each gesture rotates once. */
+const WHEEL_GESTURE_GAP_MS = 180
 
 interface DragSession {
   type: ShipType
@@ -114,10 +118,18 @@ export function SetupScreen({ game }: { game: GameApi }) {
     }
   }
 
+  /** Rotates the placed ship covering `coord` in place; false if the cell is empty water. */
+  function rotateAt(coord: Coord) {
+    const ship = shipAt(state.boards.human, coord)
+    if (!ship) return false
+    rotatePlaced(ship, coord)
+    return true
+  }
+
   // Window listeners read the latest render's values through this ref.
-  const latest = useRef({ computeDrag, commit, removeShip, setDrag })
+  const latest = useRef({ computeDrag, commit, removeShip, setDrag, rotateAt })
   useLayoutEffect(() => {
-    latest.current = { computeDrag, commit, removeShip, setDrag }
+    latest.current = { computeDrag, commit, removeShip, setDrag, rotateAt }
   })
 
   useEffect(() => {
@@ -185,6 +197,41 @@ export function SetupScreen({ game }: { game: GameApi }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [toggleOrientation])
+
+  // Wheel over the board rotates: the dragged ship, else the placed ship under the cursor, else
+  // the next ship's preview. Trackpads send a burst of small deltas per swipe, so one gesture
+  // turns the ship once. Needs a non-passive listener to keep the page from scrolling.
+  useEffect(() => {
+    const el = gridRef.current
+    if (!el) return
+    let travel = 0
+    let rotated = false
+    let lastEvent = 0
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return
+      e.preventDefault()
+      if (e.timeStamp - lastEvent > WHEEL_GESTURE_GAP_MS) {
+        travel = 0
+        rotated = false
+      }
+      lastEvent = e.timeStamp
+      const scale =
+        e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? el.clientHeight
+          : e.deltaMode === WheelEvent.DOM_DELTA_LINE
+            ? 16
+            : 1
+      travel += Math.max(Math.abs(e.deltaX), Math.abs(e.deltaY)) * scale
+      if (rotated || travel < WHEEL_STEP) return
+      rotated = true
+      if (session.current?.active) return toggleOrientation()
+      const cell = (e.target as Element | null)?.closest<HTMLElement>('[data-row][data-col]')
+      const coord = cell && { row: Number(cell.dataset.row), col: Number(cell.dataset.col) }
+      if (!coord || !latest.current.rotateAt(coord)) toggleOrientation()
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
   }, [toggleOrientation])
 
   const startDrag = (
@@ -387,7 +434,8 @@ export function SetupScreen({ game }: { game: GameApi }) {
           Tap a square to place the highlighted ship. Drag ships to move them, tap a ship to rotate
           it.{' '}
           <span className="hidden lg:inline">
-            Press <kbd className="rounded bg-slate-700 px-1">R</kbd> or right-click to rotate.
+            Press <kbd className="rounded bg-slate-700 px-1">R</kbd>, right-click or scroll the
+            mouse wheel to rotate.
           </span>
         </p>
       </section>
