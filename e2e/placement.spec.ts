@@ -134,12 +134,23 @@ test.describe('mouse placement', () => {
     }
     await wheelAt(cell(page, 'E5'))
     await expect(rotate).toHaveAccessibleName('Rotate (facing south)')
-    // A burst of deltas (one trackpad swipe) only turns the ship once.
-    for (let i = 0; i < 4; i++) await page.mouse.wheel(0, 20)
-    await expect(rotate).toHaveAccessibleName('Rotate (facing south)')
+    // A burst of deltas (one trackpad swipe) only turns the ship once. Dispatched in one task so
+    // a slow runner can't split it into separate gestures.
     await page.waitForTimeout(300)
-    await page.mouse.wheel(0, -100)
-    await expect(rotate).toHaveAccessibleName('Rotate (facing east)')
+    const c = await center(cell(page, 'E5'))
+    await page.evaluate(({ x, y }) => {
+      const target = document.elementFromPoint(x, y)!
+      for (let i = 0; i < 4; i++) {
+        const init = { deltaY: 20, clientX: x, clientY: y, bubbles: true, cancelable: true }
+        target.dispatchEvent(new WheelEvent('wheel', init))
+      }
+    }, c)
+    await expect(rotate).toHaveAccessibleName('Rotate (facing west)')
+    for (const facing of ['south', 'east']) {
+      await page.waitForTimeout(300)
+      await page.mouse.wheel(0, -100)
+      await expect(rotate).toHaveAccessibleName(`Rotate (facing ${facing})`)
+    }
 
     await mouseDrag(page, chip(page, 'Carrier'), cell(page, 'E5'))
     await expectShip(page, ['C5', 'G5'], 'carrier')
