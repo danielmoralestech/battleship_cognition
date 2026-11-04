@@ -5,10 +5,20 @@ import { useSettings } from './settings'
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const { settings, update } = useSettings()
   const first = useRef<HTMLButtonElement>(null)
+  const dialog = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     first.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Tab' || !dialog.current) return
+      // Keep focus inside the dialog so the battle behind it can't be reached.
+      const items = [...dialog.current.querySelectorAll<HTMLElement>('button')]
+      const at = items.indexOf(document.activeElement as HTMLElement)
+      const next = at === -1 ? 0 : (at + (e.shiftKey ? -1 : 1) + items.length) % items.length
+      e.preventDefault()
+      items[next]?.focus()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
@@ -19,6 +29,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby="settings-title"
