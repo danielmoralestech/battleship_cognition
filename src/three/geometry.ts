@@ -1,5 +1,6 @@
 import type { BattleLayout } from '../hooks/useMediaQuery'
-import type { Coord, PlacedShip, PlayerId } from '../engine/types'
+import { facingOf } from '../engine/board'
+import type { Coord, Facing, PlacedShip, PlayerId } from '../engine/types'
 
 /** World units: one board cell is 1×1, boards lie on the y = 0 water plane. */
 export interface BoardPlacement {
@@ -36,7 +37,14 @@ export function worldToCell(
   return { row, col }
 }
 
-/** Centre of a ship (world x/z) and its yaw: bow points +x when horizontal, +z when vertical. */
+const YAW: Record<Facing, number> = {
+  east: 0,
+  north: Math.PI / 2,
+  west: Math.PI,
+  south: -Math.PI / 2,
+}
+
+/** Centre of a ship (world x/z) and its yaw: 0 points the bow east (+x), south is +z. */
 export function shipTransform(
   board: BoardPlacement,
   ship: PlacedShip,
@@ -44,9 +52,10 @@ export function shipTransform(
 ): { x: number; z: number; yaw: number } {
   const [x0, z0] = cellToWorld(board, ship.origin, size)
   const offset = (ship.length - 1) / 2
+  const yaw = YAW[facingOf(ship)]
   return ship.orientation === 'horizontal'
-    ? { x: x0 + offset, z: z0, yaw: 0 }
-    : { x: x0, z: z0 + offset, yaw: -Math.PI / 2 }
+    ? { x: x0 + offset, z: z0, yaw }
+    : { x: x0, z: z0 + offset, yaw }
 }
 
 export interface Framing {

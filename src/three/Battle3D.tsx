@@ -169,9 +169,6 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
                 {focus === 'ai' ? 'Your fleet' : 'Enemy waters'}
               </button>
             )}
-            <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={onExit}>
-              2D view
-            </button>
           </div>
         </div>
       </div>

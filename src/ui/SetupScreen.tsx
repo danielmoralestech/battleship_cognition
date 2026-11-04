@@ -3,14 +3,20 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import {
   anchorShip,
+  facingOf,
   isFleetComplete,
+  orientationOf,
   rotateShip,
   sameCoord,
   shipAt,
   shipCells,
+  sternIndex,
+  turnFacing,
+  turnShape,
   validatePlacement,
+  type Turn,
 } from '../engine/board'
-import type { Coord, Difficulty, Orientation, PlacedShip, ShipType } from '../engine/types'
+import type { Coord, Difficulty, Facing, Orientation, PlacedShip, ShipType } from '../engine/types'
 import type { GameApi } from '../hooks/useGame'
 import { Grid, type CellView } from './Grid'
 import { measureGrid } from './gridMetrics'
@@ -36,6 +42,7 @@ interface DragSession {
   type: ShipType
   length: number
   orientation: Orientation
+  facing: Facing
   grabIndex: number
   from: 'tray' | 'board'
   pointerId: number
@@ -68,7 +75,8 @@ export function SetupScreen({ game }: { game: GameApi }) {
   const firstUnplaced = rules.fleet.find((s) => !ships.some((p) => p.type === s.type))?.type ?? null
 
   const [selected, setSelected] = useState<ShipType | null>(firstUnplaced)
-  const [orientation, setOrientation] = useState<Orientation>('horizontal')
+  const [facing, setFacing] = useState<Facing>('east')
+  const orientation = orientationOf(facing)
   const [hover, setHover] = useState<Coord | null>(null)
   const [drag, setDragState] = useState<DragView | null>(null)
   const dragView = useRef<DragView | null>(null)
@@ -122,10 +130,10 @@ export function SetupScreen({ game }: { game: GameApi }) {
   }
 
   /** Rotates the placed ship covering `coord` in place; false if the cell is empty water. */
-  function rotateAt(coord: Coord) {
+  function rotateAt(coord: Coord, turn: Turn) {
     const ship = shipAt(state.boards.human, coord)
     if (!ship) return false
-    rotatePlaced(ship, coord)
+    rotatePlaced(ship, coord, turn)
     return true
   }
 
@@ -184,27 +192,28 @@ export function SetupScreen({ game }: { game: GameApi }) {
     }
   }, [])
 
-  const toggleOrientation = useCallback(() => {
+  /** Turns the dragged ship, or else the next ship to place, 90°. */
+  const turnNext = useCallback((turn: Turn) => {
     const s = session.current
     if (s?.active) {
-      s.orientation = s.orientation === 'horizontal' ? 'vertical' : 'horizontal'
+      Object.assign(s, turnShape(s, s.grabIndex, turn))
       latest.current.setDrag(latest.current.computeDrag(s))
       return
     }
-    setOrientation((o) => (o === 'horizontal' ? 'vertical' : 'horizontal'))
+    setFacing((f) => turnFacing(f, turn))
   }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'r' || e.key === 'R') toggleOrientation()
+      if (e.key === 'r' || e.key === 'R') turnNext(e.shiftKey ? -1 : 1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggleOrientation])
+  }, [turnNext])
 
   // Wheel over the board rotates: the dragged ship, else the placed ship under the cursor, else
   // the next ship's preview. Trackpads send a burst of small deltas per swipe, so one gesture
-  // turns the ship once. Needs a non-passive listener to keep the page from scrolling.
+  // turns the ship once: down/right is clockwise, up/left anticlockwise. Needs a non-passive listener to keep the page from scrolling.
   useEffect(() => {
     const el = gridRef.current
     if (!el) return
@@ -225,21 +234,22 @@ export function SetupScreen({ game }: { game: GameApi }) {
           : e.deltaMode === WheelEvent.DOM_DELTA_LINE
             ? 16
             : 1
-      travel += Math.max(Math.abs(e.deltaX), Math.abs(e.deltaY)) * scale
-      if (rotated || travel < WHEEL_STEP) return
+      travel += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * scale
+      if (rotated || Math.abs(travel) < WHEEL_STEP) return
       rotated = true
-      if (session.current?.active) return toggleOrientation()
+      const turn: Turn = travel > 0 ? 1 : -1
+      if (session.current?.active) return turnNext(turn)
       const cell = (e.target as Element | null)?.closest<HTMLElement>('[data-row][data-col]')
       const coord = cell && { row: Number(cell.dataset.row), col: Number(cell.dataset.col) }
-      if (!coord || !latest.current.rotateAt(coord)) toggleOrientation()
+      if (!coord || !latest.current.rotateAt(coord, turn)) turnNext(turn)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [toggleOrientation])
+  }, [turnNext])
 
   const startDrag = (
     e: ReactPointerEvent,
-    ship: Pick<PlacedShip, 'type' | 'length' | 'orientation'>,
+    ship: Pick<PlacedShip, 'type' | 'length' | 'orientation' | 'facing'>,
     grabIndex: number,
     from: DragSession['from'],
   ) => {
@@ -247,6 +257,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
     if (e.pointerType === 'mouse') e.preventDefault()
     session.current = {
       ...ship,
+      facing: facingOf(ship),
       grabIndex,
       from,
       pointerId: e.pointerId,
@@ -265,10 +276,21 @@ export function SetupScreen({ game }: { game: GameApi }) {
     return suppressed
   }
 
-  const rotatePlaced = (ship: PlacedShip, pivot: Coord) => {
-    const rotated = rotateShip(ships, ship, pivot, rules)
+  const rotatePlaced = (ship: PlacedShip, pivot: Coord, turn: Turn = 1) => {
+    const rotated = rotateShip(ships, ship, pivot, rules, turn)
     if (rotated) placeShip(rotated)
     else shake()
+  }
+
+  /** The next ship with its stern on `cell`, so turning it swings it around that cell. */
+  const nextShipAt = (type: ShipType, cell: Coord) => {
+    const length = lengthOf(type)
+    return anchorShip(
+      { type, length, orientation, facing },
+      cell,
+      sternIndex(facing, length),
+      rules.gridSize,
+    )
   }
 
   const onCellClick = (coord: Coord) => {
@@ -276,24 +298,12 @@ export function SetupScreen({ game }: { game: GameApi }) {
     const ship = shipAt(state.boards.human, coord)
     if (ship) return rotatePlaced(ship, coord)
     if (!selectedType) return
-    const candidate = anchorShip(
-      { type: selectedType, length: lengthOf(selectedType), orientation },
-      coord,
-      0,
-      rules.gridSize,
-    )
+    const candidate = nextShipAt(selectedType, coord)
     if (!commit(candidate)) shake()
   }
 
   const hoverCandidate: PlacedShip | null =
-    selectedType && hover
-      ? anchorShip(
-          { type: selectedType, length: lengthOf(selectedType), orientation },
-          hover,
-          0,
-          rules.gridSize,
-        )
-      : null
+    selectedType && hover ? nextShipAt(selectedType, hover) : null
   const preview = drag
     ? { ship: drag.target, valid: drag.valid }
     : {
@@ -354,7 +364,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
                     !placed &&
                     startDrag(
                       e,
-                      { type: spec.type, length: spec.length, orientation },
+                      { type: spec.type, length: spec.length, orientation, facing },
                       Math.floor(spec.length / 2),
                       'tray',
                     )
@@ -390,12 +400,12 @@ export function SetupScreen({ game }: { game: GameApi }) {
         <div className="grid grid-cols-3 gap-2">
           <button
             type="button"
-            onClick={toggleOrientation}
-            className="btn-secondary whitespace-nowrap px-2"
-            aria-label={`Rotate (currently ${orientation})`}
+            onClick={() => turnNext(1)}
+            className="btn-secondary whitespace-nowrap px-2 capitalize"
+            aria-label={`Rotate (facing ${facing})`}
           >
             <span aria-hidden="true">↻ </span>
-            {orientation === 'horizontal' ? 'Horizontal' : 'Vertical'}
+            {facing}
           </button>
           <button
             type="button"
@@ -427,8 +437,8 @@ export function SetupScreen({ game }: { game: GameApi }) {
             onCellClick={onCellClick}
             onCellContextMenu={(coord) => {
               const ship = shipAt(state.boards.human, coord)
-              if (ship) rotatePlaced(ship, coord)
-              else toggleOrientation()
+              if (ship) rotatePlaced(ship, coord, -1)
+              else turnNext(-1)
             }}
             onCellPointerDown={(coord, e) => {
               const ship = shipAt(state.boards.human, coord)
@@ -442,8 +452,8 @@ export function SetupScreen({ game }: { game: GameApi }) {
           Tap a square to place the highlighted ship. Drag ships to move them, tap a ship to rotate
           it.{' '}
           <span className="hidden lg:inline">
-            Press <kbd className="rounded bg-slate-700 px-1">R</kbd>, right-click or scroll the
-            mouse wheel to rotate.
+            Scroll the mouse wheel or press <kbd className="rounded bg-slate-700 px-1">R</kbd> to
+            turn ships clockwise; scroll up, right-click or press Shift+R to turn them back.
           </span>
         </p>
       </section>
@@ -519,6 +529,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
             length={drag.session.length}
             orientation={drag.session.orientation}
             team={myTeam}
+            facing={drag.session.facing}
             style={
               drag.session.orientation === 'horizontal'
                 ? { width: ghostLength, height: drag.cellSize }

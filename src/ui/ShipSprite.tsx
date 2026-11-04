@@ -1,7 +1,8 @@
 import { motion } from 'motion/react'
-import { useId, type CSSProperties, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { wreckRevealMs } from '../effects/timing'
-import type { Orientation, PlacedShip, ShipType } from '../engine/types'
+import { facingOf, orientationOf, turnFacing } from '../engine/board'
+import type { Facing, Orientation, PlacedShip, ShipType } from '../engine/types'
 import { hullPath, shipGridArea } from './shipGeometry'
 
 export type ShipTone = 'valid' | 'invalid'
@@ -377,6 +378,8 @@ interface ShipSpriteProps {
   type: ShipType
   length: number
   orientation?: Orientation
+  /** Overrides `orientation`; defaults to east (horizontal) or north (vertical). */
+  facing?: Facing
   sunk?: boolean
   tone?: ShipTone
   /** Hull and main superstructure only, for very small boards. */
@@ -392,6 +395,7 @@ export function ShipSprite({
   type,
   length,
   orientation = 'horizontal',
+  facing,
   sunk = false,
   tone,
   simple = false,
@@ -401,7 +405,8 @@ export function ShipSprite({
 }: ShipSpriteProps) {
   const uid = useId().replace(/[^\w-]/g, '')
   const w = length * U
-  const vertical = orientation === 'vertical'
+  const heading = facing ?? facingOf({ orientation })
+  const vertical = orientationOf(heading) === 'vertical'
   const { beam, bow, stern } = HULLS[type]
   const top = 50 - beam / 2
   const bot = 50 + beam / 2
@@ -468,7 +473,14 @@ export function ShipSprite({
       )}
     </>
   )
-  if (vertical) body = <g transform={`translate(0 ${w}) rotate(-90)`}>{body}</g>
+  // The art is drawn bow-east; turn it to face the ship's heading.
+  const turn = {
+    east: '',
+    west: `rotate(180 ${w / 2} ${U / 2})`,
+    north: `translate(0 ${w}) rotate(-90)`,
+    south: `translate(${U} 0) rotate(90)`,
+  }[heading]
+  if (turn) body = <g transform={turn}>{body}</g>
 
   return (
     <svg
@@ -515,57 +527,102 @@ export function ShipLayer({
   offset: number
   simple?: boolean
 }) {
-  return ships.map(({ ship, sunk, lifted, preview, sinking, team }) => {
-    const sprite = (wreck?: boolean) => (
-      <ShipSprite
-        type={ship.type}
-        length={ship.length}
-        orientation={ship.orientation}
-        sunk={wreck}
-        tone={preview}
-        team={preview ? undefined : team}
-        simple={simple}
-        className="size-full"
-      />
-    )
-    const fade = sunk &&
-      sinking && {
-        delay: wreckRevealMs(ship.length) / 1000,
-        duration: 0.35,
-      }
-    return (
-      <span
-        key={`${ship.type}${preview ? '-preview' : ''}`}
-        data-ship={ship.type}
-        data-sunk={sunk || undefined}
-        data-preview={preview}
-        className={`pointer-events-none absolute inset-0 z-[1] transition-opacity ${lifted ? 'opacity-40' : ''}`}
-        style={shipGridArea(ship, offset)}
-      >
-        {fade && sinking === 'wreck' && (
-          <motion.span
-            className="absolute inset-0"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 0 }}
-            transition={fade}
-          >
-            {sprite(false)}
-          </motion.span>
-        )}
-        {fade ? (
-          <motion.span
-            data-wreck-reveal=""
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={fade}
-          >
-            {sprite(true)}
-          </motion.span>
-        ) : (
-          sprite(sunk)
-        )}
-      </span>
-    )
-  })
+  return ships.map((s) => (
+    <ShipSlot
+      key={`${s.ship.type}${s.preview ? '-preview' : ''}`}
+      {...s}
+      offset={offset}
+      simple={simple}
+    />
+  ))
+}
+
+const TURN_MS = 220
+
+function ShipSlot({
+  ship,
+  sunk,
+  lifted,
+  preview,
+  sinking,
+  team,
+  offset,
+  simple,
+}: BoardShip & { offset: number; simple?: boolean }) {
+  const facing = facingOf(ship)
+  const el = useRef<HTMLSpanElement>(null)
+  const prev = useRef({ facing, lifted })
+
+  // Swing the sprite from its old heading into the new one. Drops of a dragged ship skip
+  // this: the drag ghost already showed the new heading.
+  useLayoutEffect(() => {
+    const before = prev.current
+    prev.current = { facing, lifted }
+    if (before.facing === facing || before.lifted) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const from =
+      turnFacing(before.facing, 1) === facing
+        ? -90
+        : turnFacing(before.facing, -1) === facing
+          ? 90
+          : 180
+    el.current?.animate?.([{ transform: `rotate(${from}deg)` }, { transform: 'none' }], {
+      duration: TURN_MS,
+      easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    })
+  }, [facing, lifted])
+
+  const sprite = (wreck?: boolean) => (
+    <ShipSprite
+      type={ship.type}
+      length={ship.length}
+      orientation={ship.orientation}
+      facing={facing}
+      sunk={wreck}
+      tone={preview}
+      team={preview ? undefined : team}
+      simple={simple}
+      className="size-full"
+    />
+  )
+  const fade = sunk &&
+    sinking && {
+      delay: wreckRevealMs(ship.length) / 1000,
+      duration: 0.35,
+    }
+  return (
+    <span
+      ref={el}
+      data-ship={ship.type}
+      data-sunk={sunk || undefined}
+      data-preview={preview}
+      data-facing={facing}
+      className={`pointer-events-none absolute inset-0 z-[1] transition-opacity ${lifted ? 'opacity-40' : ''}`}
+      style={shipGridArea(ship, offset)}
+    >
+      {fade && sinking === 'wreck' && (
+        <motion.span
+          className="absolute inset-0"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={fade}
+        >
+          {sprite(false)}
+        </motion.span>
+      )}
+      {fade ? (
+        <motion.span
+          data-wreck-reveal=""
+          className="absolute inset-0"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={fade}
+        >
+          {sprite(true)}
+        </motion.span>
+      ) : (
+        sprite(sunk)
+      )}
+    </span>
+  )
 }

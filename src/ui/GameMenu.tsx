@@ -7,9 +7,15 @@ const LABELS: Record<Action, string> = { restart: 'Restart', newFleet: 'New flee
 
 /**
  * Restart / New fleet: inline on wider screens, behind a menu on phones, confirmed mid-battle.
- * `onView3D` adds a "3D view" switch (omitted in 3D or without WebGL 2).
+ * `viewSwitch` adds a 2D/3D view switch as the first item.
  */
-export function GameMenu({ game, onView3D }: { game: GameApi; onView3D?: () => void }) {
+export function GameMenu({
+  game,
+  viewSwitch,
+}: {
+  game: GameApi
+  viewSwitch?: { label: string; onClick: () => void }
+}) {
   const { state, playAgain } = game
   const [menuOpen, setMenuOpen] = useState(false)
   const [pending, setPending] = useState<Action | null>(null)
@@ -26,16 +32,16 @@ export function GameMenu({ game, onView3D }: { game: GameApi; onView3D?: () => v
   return (
     <>
       <div className="hidden items-center gap-3 sm:flex">
+        {viewSwitch && (
+          <button type="button" className="btn-secondary" onClick={viewSwitch.onClick}>
+            {viewSwitch.label}
+          </button>
+        )}
         {(['restart', 'newFleet'] as const).map((a) => (
           <button key={a} type="button" className="btn-secondary" onClick={() => request(a)}>
             {label(a)}
           </button>
         ))}
-        {onView3D && (
-          <button type="button" className="btn-secondary" onClick={onView3D}>
-            3D view
-          </button>
-        )}
       </div>
 
       <div className="relative sm:hidden">
@@ -56,6 +62,19 @@ export function GameMenu({ game, onView3D }: { game: GameApi; onView3D?: () => v
               role="menu"
               className="absolute right-0 z-20 mt-2 flex w-40 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900 shadow-xl"
             >
+              {viewSwitch && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="border-b border-slate-800 px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-800"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    viewSwitch.onClick()
+                  }}
+                >
+                  {viewSwitch.label}
+                </button>
+              )}
               {(['restart', 'newFleet'] as const).map((a) => (
                 <button
                   key={a}
@@ -67,19 +86,6 @@ export function GameMenu({ game, onView3D }: { game: GameApi; onView3D?: () => v
                   {label(a)}
                 </button>
               ))}
-              {onView3D && (
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="border-t border-slate-800 px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-800"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    onView3D()
-                  }}
-                >
-                  3D view
-                </button>
-              )}
             </div>
           </>
         )}

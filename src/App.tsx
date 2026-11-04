@@ -60,7 +60,13 @@ export default function App() {
               {state.phase !== 'setup' && (
                 <GameMenu
                   game={game}
-                  onView3D={!view3d && webgl2 ? () => setView('3d') : undefined}
+                  viewSwitch={
+                    view3d
+                      ? { label: '2D view', onClick: () => setView('2d') }
+                      : webgl2
+                        ? { label: '3D view', onClick: () => setView('3d') }
+                        : undefined
+                  }
                 />
               )}
             </div>
