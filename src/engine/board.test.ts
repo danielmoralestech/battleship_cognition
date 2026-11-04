@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  coordLabel,
   allShipsSunk,
   anchorShip,
   createBoard,
@@ -23,6 +24,13 @@ const destroyer = (
   type: 'destroyer',
   length: 2,
   orientation,
+  origin: { row, col },
+})
+
+const cruiser = (row: number, col: number): PlacedShip => ({
+  type: 'cruiser',
+  length: 3,
+  orientation: 'horizontal',
   origin: { row, col },
 })
 
@@ -151,12 +159,33 @@ describe('nearestValidPlacement', () => {
 describe('rotateShip', () => {
   it('rotates around the tapped cell', () => {
     const rotated = rotateShip([], carrier(4, 2), { row: 4, col: 4 }, STANDARD_RULES)
-    expect(rotated).toEqual(carrier(2, 4, 'vertical'))
+    expect(rotated).toEqual({ ...carrier(2, 4, 'vertical'), facing: 'south' })
   })
 
   it('shifts to stay on the board', () => {
     const rotated = rotateShip([], carrier(0, 0), { row: 0, col: 0 }, STANDARD_RULES)
-    expect(rotated).toEqual(carrier(0, 0, 'vertical'))
+    expect(rotated).toEqual({ ...carrier(0, 0, 'vertical'), facing: 'south' })
+  })
+
+  it('turns all the way round in four clockwise steps, swinging around the pivot', () => {
+    const pivot = { row: 4, col: 4 }
+    let ship: PlacedShip = cruiser(4, 4)
+    const seen: string[] = []
+    for (let i = 0; i < 4; i++) {
+      ship = rotateShip([], ship, pivot, STANDARD_RULES)!
+      seen.push(`${ship.facing} ${shipCells(ship).map(coordLabel).join(' ')}`)
+    }
+    expect(seen).toEqual(['south E5 E6 E7', 'west C5 D5 E5', 'north E3 E4 E5', 'east E5 F5 G5'])
+  })
+
+  it('turns anticlockwise when asked', () => {
+    const ship = rotateShip([], cruiser(4, 4), { row: 4, col: 4 }, STANDARD_RULES, -1)!
+    expect(ship.facing).toBe('north')
+    expect(shipCells(ship).map(coordLabel)).toEqual(['E3', 'E4', 'E5'])
+    expect(rotateShip([], ship, { row: 4, col: 4 }, STANDARD_RULES, 1)).toEqual({
+      ...cruiser(4, 4),
+      facing: 'east',
+    })
   })
 
   it('nudges around other ships', () => {

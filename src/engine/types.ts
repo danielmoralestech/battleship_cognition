@@ -10,6 +10,9 @@ export type CoordKey = string
 
 export type Orientation = 'horizontal' | 'vertical'
 
+/** Which way a ship's bow points. Only affects how it's drawn, never which cells it covers. */
+export type Facing = 'north' | 'east' | 'south' | 'west'
+
 export interface ShipSpec {
   type: ShipType
   name: string
@@ -29,6 +32,8 @@ export interface PlacedShip {
   origin: Coord
   orientation: Orientation
   length: number
+  /** Defaults to east for horizontal ships and north for vertical ones (see `facingOf`). */
+  facing?: Facing
 }
 
 export type CellShot = 'hit' | 'miss'
