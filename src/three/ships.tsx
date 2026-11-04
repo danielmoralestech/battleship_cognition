@@ -127,8 +127,11 @@ function buildParts(type: ShipType, cells: number): Part[] {
     hull.scale(1, 0.8, 1)
     parts.push({ geometry: hull, material: 'hull', position: [0, 0.02, 0] })
     parts.push({ geometry: box(0.45, 0.26, 0.14), material: 'hull', position: [0.25, 0.25, 0] })
+    // Light rims under the accents keep dark fleet colors visible on the dark hull.
+    parts.push({ geometry: box(0.5, 0.04, 0.18), material: 'super', position: [0.25, 0.32, 0] })
     parts.push({ geometry: box(0.47, 0.05, 0.15), material: 'team', position: [0.25, 0.33, 0] })
-    parts.push({ geometry: box(L * 0.7, 0.03, 0.39), material: 'team', position: [0, 0, 0] })
+    parts.push({ geometry: box(L * 0.72, 0.05, 0.4), material: 'super', position: [0, -0.01, 0] })
+    parts.push({ geometry: box(L * 0.7, 0.03, 0.41), material: 'team', position: [0, 0.02, 0] })
     parts.push({ geometry: cyl(0.015, 0.25, 4), material: 'dark', position: [0.32, 0.5, 0] })
     return parts
   }

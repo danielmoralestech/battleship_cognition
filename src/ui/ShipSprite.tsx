@@ -290,7 +290,9 @@ function Details({
             height={8}
             rx={4}
             fill={p.team ?? p.structureTop}
-            opacity={0.85}
+            stroke={p.team ? STEEL.structure : undefined}
+            strokeWidth={p.team ? 2 : undefined}
+            opacity={p.team ? 1 : 0.85}
           />
         </g>
       )
@@ -405,6 +407,8 @@ export function ShipSprite({
   const bot = 50 + beam / 2
   const base = sunk ? WRECK : type === 'submarine' ? SUB : STEEL
   const p: Palette = team ? { ...base, team } : base
+  // The submarine's hull is dark, so its accents get a light rim to keep dark colors visible.
+  const rim = team && type === 'submarine' ? STEEL.structure : undefined
   const x0 = 5
   const x1 = w - 4
   const hull = hullPath(x0, x1, top, bot, bow, stern)
@@ -423,6 +427,15 @@ export function ShipSprite({
       <path d={deck} fill={`url(#${uid}-deck)`} />
       {team && (
         <g data-team={team} clipPath={`url(#${uid}-clip)`} opacity={sunk ? 0.55 : 1}>
+          {rim && (
+            <path
+              d={hullPath(x0 + 3, x1 - 4, top + 3, bot - 3, bow - 4, stern)}
+              fill="none"
+              stroke={rim}
+              strokeWidth={simple ? 11 : 8}
+              strokeLinejoin="round"
+            />
+          )}
           <path
             d={hullPath(x0 + 3, x1 - 4, top + 3, bot - 3, bow - 4, stern)}
             fill="none"
@@ -436,6 +449,8 @@ export function ShipSprite({
             width={simple ? 14 : 9}
             height={U}
             fill={team}
+            stroke={rim}
+            strokeWidth={rim ? 3 : undefined}
           />
         </g>
       )}
