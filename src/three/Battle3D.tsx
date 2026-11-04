@@ -6,6 +6,8 @@ import type { PlayerId } from '../engine/types'
 import { Announcer } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
+import { useAim } from '../ui/aim'
+import { FireButton } from '../ui/FireButton'
 import { FleetStatus } from '../ui/FleetStatus'
 import { useTeamHex } from '../ui/teamColors'
 import { CAMERA_FOV, Scene, type HudInsets } from './Scene'
@@ -28,6 +30,7 @@ export default function Battle3D({
   const layout = useBattleLayout()
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [focus, setFocus] = useState<PlayerId>('ai')
+  const aim = useAim(state, fire)
   const [contextLost, setContextLost] = useState(false)
   const [showFps] = useState(() => new URLSearchParams(window.location.search).has('fps'))
   const fpsEl = useRef<HTMLSpanElement>(null)
@@ -101,7 +104,8 @@ export default function Battle3D({
           >
             <Scene
               state={state}
-              fire={fire}
+              fire={aim.select}
+              aimed={aim.aimed}
               layout={layout}
               focus={focus}
               reduced={reduced}
@@ -126,7 +130,7 @@ export default function Battle3D({
             ? 'Battle over'
             : humanTurn
               ? focus === 'ai'
-                ? 'Your turn: tap enemy waters to fire'
+                ? `Your turn: tap enemy waters to ${aim.enabled ? 'aim' : 'fire'}`
                 : 'Your turn: switch to enemy waters'
               : 'Enemy is aiming...'}
         </p>
@@ -167,6 +171,9 @@ export default function Battle3D({
               <span ref={fpsEl} data-testid="fps" className="font-mono text-xs text-emerald-300">
                 -- fps
               </span>
+            )}
+            {aim.enabled && state.phase === 'playing' && (
+              <FireButton aim={aim} className="px-3 py-1.5 text-xs" />
             )}
             {layout === 'portrait' && (
               <button

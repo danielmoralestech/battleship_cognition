@@ -46,6 +46,8 @@ test('shots play sounds, and the Sound switch mutes them and is remembered', asy
   // Tab stays inside the dialog.
   const done = dialog.getByRole('button', { name: 'Done' })
   await page.keyboard.press('Tab')
+  await expect(dialog.getByRole('switch', { name: 'Aim before firing' })).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(done).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(sound).toBeFocused()

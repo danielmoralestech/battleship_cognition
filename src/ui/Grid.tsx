@@ -10,6 +10,8 @@ export interface CellView {
   preview?: 'valid' | 'invalid'
   animate?: boolean
   clickable?: boolean
+  /** Crosshair for "Aim before firing". */
+  aimed?: boolean
   draggable?: boolean
 }
 
@@ -79,7 +81,9 @@ export function Grid({
                 key={col}
                 type="button"
                 role="gridcell"
-                aria-label={`${coordLabel(coord)}${cell.ship ? `, ${cell.ship}` : ''}${cell.shot ? `, ${cell.shot}` : ''}`}
+                aria-label={`${coordLabel(coord)}${cell.ship ? `, ${cell.ship}` : ''}${cell.shot ? `, ${cell.shot}` : ''}${cell.aimed ? ', aimed, activate again to fire' : ''}`}
+                aria-selected={cell.aimed || undefined}
+                data-aimed={cell.aimed || undefined}
                 data-coord={coordLabel(coord)}
                 data-shot={cell.shot ?? ''}
                 data-row={row}
@@ -96,6 +100,7 @@ export function Grid({
                 className={cellClasses(cell)}
               >
                 {cell.shot && <ShotMarker result={cell.shot} animate={!!cell.animate} />}
+                {cell.aimed && <Crosshair />}
               </button>
             )
           })}
@@ -141,6 +146,22 @@ function MiniGrid({
   )
 }
 
+function Crosshair() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="pointer-events-none absolute inset-0 h-full w-full animate-pulse text-amber-300 drop-shadow"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 1v6M12 17v6M1 12h6M17 12h6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function cellClasses(cell: CellView): string {
   const base =
     'relative aspect-square rounded-[3px] transition-colors disabled:cursor-default focus-visible:z-[3] focus-visible:outline-2 focus-visible:outline-amber-300 [&>*]:z-[2]'
@@ -150,6 +171,7 @@ function cellClasses(cell: CellView): string {
   let interactive = ''
   if (cell.preview) interactive = 'cursor-pointer'
   else if (cell.draggable) interactive = 'cursor-grab'
+  if (cell.aimed) fill = 'bg-amber-400/25 ring-2 ring-inset ring-amber-300'
   else if (cell.clickable)
     interactive = 'cursor-crosshair hover:bg-sky-400/30 hover:ring-2 hover:ring-amber-300/70'
   return `${base} ${fill} ${interactive}`

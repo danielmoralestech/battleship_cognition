@@ -9,6 +9,8 @@ import { Announcer, BoardFx, ImpactShake, ScreenFlash, ShotLog } from '../effect
 import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
+import { useAim } from './aim'
+import { FireButton } from './FireButton'
 import { Grid, type CellView } from './Grid'
 import type { BoardShip } from './ShipSprite'
 import { useTeamHex } from './teamColors'
@@ -18,6 +20,7 @@ export function GameScreen({ game }: { game: GameApi }) {
   const layout = useBattleLayout()
   const teamHex = useTeamHex()
   const [fleetOpen, setFleetOpen] = useState(false)
+  const aim = useAim(state, fire)
   const { rules, boards, log } = state
   const latest = log[log.length - 1] ?? null
   const latestBy = (p: PlayerId): ShotEvent | null =>
@@ -74,6 +77,7 @@ export function GameScreen({ game }: { game: GameApi }) {
       shot: cell === 'unknown' ? undefined : cell,
       animate: isLatest('human', coord),
       clickable: canFire(state, 'human', coord),
+      aimed: !!aim.aimed && sameCoord(aim.aimed, coord),
     }
   }
 
@@ -114,12 +118,16 @@ export function GameScreen({ game }: { game: GameApi }) {
         {state.phase === 'gameOver'
           ? 'Battle over'
           : humanTurn
-            ? 'Your turn: fire at enemy waters'
+            ? `Your turn: ${aim.enabled ? 'aim' : 'fire'} at enemy waters`
             : 'Enemy is aiming...'}
       </p>
       <Announcer event={latest} log={log} rules={rules} compact={layout === 'landscape'} />
       <ScreenFlash event={latest} />
     </div>
+  )
+
+  const fireButton = aim.enabled && state.phase === 'playing' && (
+    <FireButton aim={aim} className="w-full max-w-[26rem] py-2" />
   )
 
   const enemyAiming = state.phase === 'playing' && !humanTurn
@@ -137,7 +145,7 @@ export function GameScreen({ game }: { game: GameApi }) {
           label="Enemy waters"
           getCell={enemyCell}
           ships={enemyShips}
-          onCellClick={(coord) => humanTurn && fire(coord)}
+          onCellClick={aim.select}
           dimmed={enemyAiming}
           gridRef={enemyGridRef}
         />
@@ -197,6 +205,7 @@ export function GameScreen({ game }: { game: GameApi }) {
         >
           {enemyBoard}
         </section>
+        {fireButton}
         <section aria-label="Battle status" className="flex w-full max-w-[26rem] items-start gap-3">
           <button
             type="button"
@@ -234,6 +243,7 @@ export function GameScreen({ game }: { game: GameApi }) {
         </section>
         <div className="flex w-36 shrink-0 flex-col gap-2 text-center">
           {status}
+          {fireButton}
           {enemyFleet}
           {myFleet}
           <p className="text-[11px] text-slate-400">
@@ -256,6 +266,7 @@ export function GameScreen({ game }: { game: GameApi }) {
         <section className="flex w-full max-w-[26rem] flex-col items-center gap-3">
           <h2 className="text-lg font-semibold text-sky-100">Enemy waters</h2>
           {enemyBoard}
+          {fireButton}
           {enemyFleet}
           <p className="text-xs text-slate-400">{myStats}</p>
         </section>

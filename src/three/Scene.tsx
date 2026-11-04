@@ -41,7 +41,9 @@ export interface HudInsets {
 
 interface SceneProps {
   state: GameState
+  /** Called for a tap on an enemy cell (fires, or aims when "Aim before firing" is on). */
   fire: (coord: Coord) => void
+  aimed?: Coord | null
   layout: BattleLayout
   focus: PlayerId
   reduced: boolean
@@ -75,6 +77,7 @@ const SUNK_STAGGER = 0.14
 export function Scene({
   state,
   fire,
+  aimed = null,
   layout,
   focus,
   reduced,
@@ -226,6 +229,7 @@ export function Scene({
         fire={fire}
         state={state}
       />
+      {aimed && <Crosshair at={cellToWorld(placements.ai, aimed, size)} />}
       <Sky />
       <hemisphereLight args={['#bcd7f0', '#0b1a2a', 1.4]} />
       <directionalLight position={[9, 15, -10]} intensity={2.2} />
@@ -436,6 +440,28 @@ function Ocean({
         <meshBasicMaterial visible={false} />
       </mesh>
     </>
+  )
+}
+
+/** Pulsing amber reticle over the aimed enemy cell. */
+function Crosshair({ at }: { at: [number, number] }) {
+  const ref = useRef<Object3D>(null)
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.scale.setScalar(1 + Math.sin(clock.elapsedTime * 6) * 0.08)
+  })
+  return (
+    <group ref={ref} position={[at[0], 0.22, at[1]]} rotation-x={-Math.PI / 2}>
+      <mesh renderOrder={10}>
+        <ringGeometry args={[0.3, 0.4, 32]} />
+        <meshBasicMaterial color="#fcd34d" transparent depthTest={false} />
+      </mesh>
+      {[0, Math.PI / 2].map((r) => (
+        <mesh key={r} rotation-z={r} renderOrder={10}>
+          <planeGeometry args={[0.95, 0.07]} />
+          <meshBasicMaterial color="#fcd34d" transparent depthTest={false} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
