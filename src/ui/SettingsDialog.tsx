@@ -47,6 +47,13 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             checked={settings.sound}
             onChange={(sound) => update({ sound })}
           />
+          <SettingSwitch
+            id="setting-aim"
+            label="Aim before firing"
+            description="Tap a square to aim, then tap it again or press Fire."
+            checked={settings.aimToFire}
+            onChange={(aimToFire) => update({ aimToFire })}
+          />
         </ul>
         <button type="button" className="btn-primary mt-4 w-full" onClick={onClose}>
           Done

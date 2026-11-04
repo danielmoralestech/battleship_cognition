@@ -69,14 +69,17 @@ export const saveColors = (colors: FleetColors) => write(COLORS_KEY, colors)
 
 export interface Settings {
   sound: boolean
+  /** First tap aims, a second tap (or the Fire button) fires. */
+  aimToFire: boolean
 }
 
-export const DEFAULT_SETTINGS: Settings = { sound: true }
+export const DEFAULT_SETTINGS: Settings = { sound: true, aimToFire: false }
 
 export function loadSettings(): Settings {
   const saved = read<Partial<Settings>>(SETTINGS_KEY)
   return {
     sound: typeof saved?.sound === 'boolean' ? saved.sound : DEFAULT_SETTINGS.sound,
+    aimToFire: typeof saved?.aimToFire === 'boolean' ? saved.aimToFire : DEFAULT_SETTINGS.aimToFire,
   }
 }
 
