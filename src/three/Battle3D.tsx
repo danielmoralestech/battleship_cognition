@@ -78,6 +78,7 @@ export default function Battle3D({
   const mine = stats('human')
   const theirs = stats('ai')
   const compact = layout === 'landscape'
+  const canFire = aim.enabled && state.phase === 'playing'
 
   return (
     <>
@@ -142,6 +143,11 @@ export default function Battle3D({
         data-testid="hud-bottom"
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[5] bg-gradient-to-t from-slate-950/90 via-slate-950/70 to-transparent px-[max(0.75rem,env(safe-area-inset-left))] pt-6 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       >
+        {canFire && layout === 'portrait' && (
+          <div className="pointer-events-auto mx-auto mb-3 flex max-w-xs justify-center rounded-lg bg-slate-900">
+            <FireButton aim={aim} className="w-full py-3 text-base" />
+          </div>
+        )}
         <div
           className={`pointer-events-auto mx-auto flex max-w-5xl items-end gap-3 ${compact ? 'justify-between' : 'flex-wrap justify-between'}`}
         >
@@ -161,6 +167,13 @@ export default function Battle3D({
                 .map((s) => s.type)}
             />
           </div>
+          {canFire && layout !== 'portrait' && (
+            <div className="flex flex-1 justify-center self-center">
+              <div className="rounded-lg bg-slate-900">
+                <FireButton aim={aim} className="min-w-[10rem] px-6 py-2.5 text-base" />
+              </div>
+            </div>
+          )}
           <p className="text-[11px] leading-tight text-slate-400">
             Your shots: {mine.shots} · {mine.accuracy}%
             <br />
@@ -171,9 +184,6 @@ export default function Battle3D({
               <span ref={fpsEl} data-testid="fps" className="font-mono text-xs text-emerald-300">
                 -- fps
               </span>
-            )}
-            {aim.enabled && state.phase === 'playing' && (
-              <FireButton aim={aim} className="px-3 py-1.5 text-xs" />
             )}
             {layout === 'portrait' && (
               <button

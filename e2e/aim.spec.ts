@@ -122,7 +122,16 @@ test('aim before firing in 3D: tap aims, Fire button and second tap fire', async
   }
 
   await tap(4, 4)
-  await expect(page.getByRole('button', { name: 'Fire at E5' })).toBeVisible()
+  const fireAt = page.getByRole('button', { name: 'Fire at E5' })
+  await expect(fireAt).toBeVisible()
+  const box = (await fireAt.boundingBox())!
+  expect(box.height).toBeGreaterThanOrEqual(44)
+  if (isMobile) {
+    // On an upright phone it is a full-size button centred above the status bar.
+    const width = page.viewportSize()!.width
+    expect(Math.abs(box.x + box.width / 2 - width / 2)).toBeLessThan(4)
+    expect(box.width).toBeGreaterThanOrEqual(width / 2)
+  }
   await shots(page, 0).toBeVisible()
   await tap(4, 4)
   await shots(page, 1).toBeVisible()
