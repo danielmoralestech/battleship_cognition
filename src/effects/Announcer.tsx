@@ -26,6 +26,7 @@ export function Announcer({
 }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
   const panelId = useId()
   const message = event ? describeShot(event, rules) : null
   const isOpen = open && !!message && log.length > 0
@@ -37,8 +38,20 @@ export function Announcer({
       setOpen(false)
       button.current?.focus()
     }
+    // Some controls (the 3D header) sit above the backdrop, so swallow outside clicks here too.
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (button.current?.contains(target) || panel.current?.contains(target)) return
+      e.preventDefault()
+      e.stopPropagation()
+      setOpen(false)
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('click', onClick, true)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('click', onClick, true)
+    }
   }, [isOpen])
 
   return (
@@ -80,12 +93,9 @@ export function Announcer({
       )}
       {isOpen && (
         <>
-          <div
-            className="pointer-events-auto fixed inset-0 z-20"
-            data-testid="battle-log-backdrop"
-            onClick={() => setOpen(false)}
-          />
+          <div className="pointer-events-auto fixed inset-0 z-20" />
           <motion.div
+            ref={panel}
             id={panelId}
             className="pointer-events-auto absolute top-full left-1/2 z-20 mt-1 w-[min(22rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-xl border border-slate-700 bg-slate-900/95 p-3 text-left shadow-2xl backdrop-blur"
             initial={{ opacity: 0, y: -6 }}

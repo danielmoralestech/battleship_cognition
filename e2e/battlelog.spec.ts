@@ -93,5 +93,16 @@ test('3D: tapping the result bubble drops down the battle log', async ({ page, i
     await expect(panel(page)).toBeHidden()
     await expect(fleet).toHaveAttribute('aria-pressed', 'false')
   }
+
+  // The 3D header sits above the backdrop; tapping it must only close the log as well.
+  const header = page.getByRole('button', { name: isMobile ? 'Game menu' : 'Restart' })
+  await bubble(page).click()
+  const hbox = (await header.boundingBox())!
+  await tapAt(page, isMobile, { x: hbox.x + hbox.width / 2, y: hbox.y + hbox.height / 2 })
+  await expect(panel(page)).toBeHidden()
+  await expect(page.getByRole('menu')).toHaveCount(0)
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+  await header.click()
+  await expect(isMobile ? page.getByRole('menu') : page.getByRole('alertdialog')).toBeVisible()
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 })
