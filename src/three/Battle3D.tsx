@@ -107,7 +107,7 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
 
       <div
         ref={topHud}
-        className="pointer-events-none relative z-[5] flex flex-col items-center gap-1 pb-1"
+        className="pointer-events-none relative z-[6] flex flex-col items-center gap-1 pb-1"
       >
         <p
           className={`font-semibold uppercase drop-shadow ${compact ? 'text-xs tracking-wide' : 'text-sm tracking-widest'} ${humanTurn ? 'text-amber-300' : 'text-slate-300'}`}

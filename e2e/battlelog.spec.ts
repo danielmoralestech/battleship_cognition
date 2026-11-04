@@ -79,5 +79,19 @@ test('3D: tapping the result bubble drops down the battle log', async ({ page, i
 
   await tapAt(page, isMobile, await cellAt(7, 7))
   await expect(panel(page)).toBeHidden()
+
+  // The bottom HUD sits under the backdrop too: tapping it only closes the log.
+  await bubble(page).click()
+  const stats = (await page.getByText(/Your shots: 1\b/).boundingBox())!
+  await tapAt(page, isMobile, { x: stats.x + 4, y: stats.y + 4 })
+  await expect(panel(page)).toBeHidden()
+  if (isMobile) {
+    const fleet = page.getByRole('button', { name: 'Your fleet' })
+    await bubble(page).click()
+    const box = (await fleet.boundingBox())!
+    await tapAt(page, isMobile, { x: box.x + box.width / 2, y: box.y + box.height / 2 })
+    await expect(panel(page)).toBeHidden()
+    await expect(fleet).toHaveAttribute('aria-pressed', 'false')
+  }
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
 })
