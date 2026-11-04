@@ -22,6 +22,7 @@ import { Grid, type CellView } from './Grid'
 import { measureGrid } from './gridMetrics'
 import { ShipSprite, type BoardShip } from './ShipSprite'
 import { TEAM_COLOR_NAMES, TEAM_COLORS, useFleetColors, type TeamColor } from './teamColors'
+import { useBattleLayout } from '../hooks/useMediaQuery'
 
 const DIFFICULTY_INFO: Record<Difficulty, string> = {
   easy: 'Fires at random.',
@@ -70,6 +71,7 @@ export function SetupScreen({ game }: { game: GameApi }) {
     game
   const { rules } = state
   const { colors, setColor } = useFleetColors()
+  const landscape = useBattleLayout() === 'landscape'
   const myTeam = TEAM_COLORS[colors.human]
   const ships = state.boards.human.ships
   const firstUnplaced = rules.fleet.find((s) => !ships.some((p) => p.type === s.type))?.type ?? null
@@ -334,16 +336,31 @@ export function SetupScreen({ game }: { game: GameApi }) {
     boardShips.push({ ship: preview.ship, preview: preview.valid ? 'valid' : 'invalid' })
 
   const complete = isFleetComplete(ships, rules)
+  const hint = (
+    <p className="text-center text-xs text-slate-400">
+      Tap a square to place the highlighted ship. Drag ships to move them, tap a ship to rotate it.{' '}
+      <span className="hidden lg:inline">
+        Scroll the mouse wheel or press <kbd className="rounded bg-slate-700 px-1">R</kbd> to turn
+        ships clockwise; scroll up, right-click or press Shift+R to turn them back.
+      </span>
+    </p>
+  )
 
   return (
-    <div className="mx-auto flex w-full max-w-[26rem] flex-col gap-4 lg:grid lg:max-w-none lg:grid-cols-[26rem_22rem] lg:justify-center lg:gap-x-8 lg:gap-y-5">
+    <div
+      className={
+        landscape
+          ? 'grid grid-cols-[auto_minmax(0,22rem)] items-start justify-center gap-3'
+          : 'mx-auto flex w-full max-w-[26rem] flex-col gap-4 lg:grid lg:max-w-none lg:grid-cols-[26rem_22rem] lg:justify-center lg:gap-x-8 lg:gap-y-5'
+      }
+    >
       <h2 className="sr-only text-center text-lg font-semibold text-sky-100 lg:not-sr-only lg:col-start-1 lg:row-start-1">
         Deploy your fleet
       </h2>
 
       <section
         aria-label="Fleet controls"
-        className="flex flex-col gap-3 rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start lg:p-5"
+        className={`flex flex-col gap-3 rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-start lg:p-5 ${landscape ? 'col-start-2 row-start-1' : ''}`}
       >
         <h3 className="hidden text-sm font-semibold uppercase tracking-wide text-sky-300 lg:block">
           Ships
@@ -422,9 +439,16 @@ export function SetupScreen({ game }: { game: GameApi }) {
             Clear
           </button>
         </div>
+        {landscape && hint}
       </section>
 
-      <section className="flex flex-col items-center gap-3 lg:col-start-1 lg:row-start-2 lg:row-span-4">
+      <section
+        className={
+          landscape
+            ? 'sticky top-0 col-start-1 row-span-4 row-start-1 w-[min(26rem,calc(100dvh-5.5rem))] self-start'
+            : 'flex flex-col items-center gap-3 lg:col-start-1 lg:row-start-2 lg:row-span-4'
+        }
+      >
         <div ref={boardScope} className="w-full">
           <Grid
             size={rules.gridSize}
@@ -448,17 +472,12 @@ export function SetupScreen({ game }: { game: GameApi }) {
             }}
           />
         </div>
-        <p className="text-center text-xs text-slate-400">
-          Tap a square to place the highlighted ship. Drag ships to move them, tap a ship to rotate
-          it.{' '}
-          <span className="hidden lg:inline">
-            Scroll the mouse wheel or press <kbd className="rounded bg-slate-700 px-1">R</kbd> to
-            turn ships clockwise; scroll up, right-click or press Shift+R to turn them back.
-          </span>
-        </p>
+        {!landscape && hint}
       </section>
 
-      <section className="rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-3 lg:p-5">
+      <section
+        className={`rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-3 lg:p-5 ${landscape ? 'col-start-2 row-start-3' : ''}`}
+      >
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">
           Opponent
         </h3>
@@ -483,7 +502,9 @@ export function SetupScreen({ game }: { game: GameApi }) {
         <p className="mt-2 text-xs text-slate-400">{DIFFICULTY_INFO[state.difficulty]}</p>
       </section>
 
-      <section className="rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-4 lg:p-5">
+      <section
+        className={`rounded-xl border border-sky-800/60 bg-slate-900/70 p-3 lg:col-start-2 lg:row-start-4 lg:p-5 ${landscape ? 'col-start-2 row-start-4' : ''}`}
+      >
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-300">Colors</h3>
         <div className="flex flex-col gap-2">
           <ColorPicker
@@ -495,7 +516,13 @@ export function SetupScreen({ game }: { game: GameApi }) {
         </div>
       </section>
 
-      <div className="sticky bottom-0 -mx-3 bg-slate-950/90 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:static lg:col-start-2 lg:row-start-5 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <div
+        className={
+          landscape
+            ? 'col-start-2 row-start-2'
+            : 'sticky bottom-0 -mx-3 bg-slate-950/90 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:static lg:col-start-2 lg:row-start-5 lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none'
+        }
+      >
         <button
           type="button"
           disabled={!complete}

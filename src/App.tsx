@@ -17,7 +17,7 @@ export default function App() {
   const game = useGame()
   const { state, stats } = game
   const record = stats[state.difficulty]
-  const tightHeader = useBattleLayout() === 'landscape' && state.phase !== 'setup'
+  const tightHeader = useBattleLayout() === 'landscape'
   const [view, setViewState] = useState(initialView)
   const [webgl2] = useState(hasWebGL2)
   const view3d = view === '3d'
@@ -71,13 +71,16 @@ export default function App() {
         <FleetColorsContext.Provider value={fleetColors}>
           <div className="min-h-dvh bg-gradient-to-b from-slate-950 via-slate-950 to-sky-950 text-slate-100">
             <header
-              className={`${battle3d ? 'relative z-10' : ''} mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 ${tightHeader ? 'py-1.5' : 'pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:py-5'}`}
+              className={`${battle3d ? 'relative z-10' : ''} mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 min-[360px]:gap-3 px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 ${tightHeader ? 'py-1.5' : 'pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:py-5'}`}
             >
-              <h1 className="text-2xl font-black tracking-tight text-sky-100">
-                <span aria-hidden="true">⚓ </span>Battleship
+              <h1 className="text-xl font-black tracking-tight text-sky-100 min-[360px]:text-2xl">
+                <span aria-hidden="true" className="max-[359px]:hidden">
+                  ⚓{' '}
+                </span>
+                Battleship
               </h1>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="rounded-full border border-slate-700 px-3 py-1 capitalize text-slate-300">
+              <div className="flex items-center gap-2 text-xs min-[360px]:gap-3 min-[360px]:text-sm">
+                <span className="rounded-full border border-slate-700 px-2 py-1 capitalize min-[360px]:px-3 text-slate-300">
                   {state.difficulty} AI &middot; {record.wins}W / {record.losses}L
                 </span>
                 {state.phase !== 'setup' && (
@@ -94,7 +97,9 @@ export default function App() {
                 )}
               </div>
             </header>
-            <main className="mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-12">
+            <main
+              className={`mx-auto max-w-5xl px-[max(0.75rem,env(safe-area-inset-left))] sm:px-4 ${tightHeader ? 'pb-[max(0.5rem,env(safe-area-inset-bottom))]' : 'pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-12'}`}
+            >
               {state.phase === 'setup' ? (
                 <SetupScreen game={game} />
               ) : view3d ? (
