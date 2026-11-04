@@ -1,5 +1,5 @@
 /** How long a shell takes to reach its target; impact visuals wait for it. */
-export const SHELL_MS = 280
+export const SHELL_MS = 450
 
 /** Gap between the chained explosions that run along a sinking ship's cells. */
 export const SINK_CHAIN_MS = 90

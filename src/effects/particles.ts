@@ -64,15 +64,24 @@ export function shellPosition(p: Particle, t: number): { x: number; y: number } 
   return { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t - arc * 4 * t * (1 - t) }
 }
 
-/** A shell flying from (x0, y0) to (x1, y1) over `life` seconds. */
-export function shell(x0: number, y0: number, x1: number, y1: number, s: number, life = 0.28) {
+/** Direction of travel (radians, canvas coordinates) at time `t` along the shell's arc. */
+export function shellAngle(p: Particle, t: number): number {
+  const { x0, y0, x1, y1, arc } = p.path!
+  return Math.atan2(y1 - y0 - arc * 4 * (1 - 2 * t), x1 - x0)
+}
+
+/** How much bigger the shell looks at time `t`: largest at the top of the arc, as if nearer. */
+export const shellLift = (t: number) => 1 + 2 * t * (1 - t)
+
+/** A shell flying from (x0, y0) to (x1, y1) over `life` seconds. `size` holds the board scale. */
+export function shell(x0: number, y0: number, x1: number, y1: number, s: number, life = 0.45) {
   return particle({
     kind: 'shell',
     x: x0,
     y: y0,
     life,
-    size: 2.5 * s,
-    color: '255,237,213',
+    size: s,
+    color: '253,186,116',
     path: { x0, y0, x1, y1, arc: 50 * s },
   })
 }
@@ -205,6 +214,58 @@ function circle(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) 
   ctx.fill()
 }
 
+const TRACER_SPAN = 0.14
+const TRACER_STEPS = 12
+
+/** A brass naval shell with a copper driving band, nose along +x, about 17 units long. */
+function shellBody(ctx: CanvasRenderingContext2D) {
+  const g = ctx.createLinearGradient(0, -3.2, 0, 3.2)
+  g.addColorStop(0, '#78350f')
+  g.addColorStop(0.35, '#fde68a')
+  g.addColorStop(0.6, '#d97706')
+  g.addColorStop(1, '#78350f')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.moveTo(-8, -3.2)
+  ctx.lineTo(1, -3.2)
+  ctx.quadraticCurveTo(6.5, -2.8, 8.5, 0)
+  ctx.quadraticCurveTo(6.5, 2.8, 1, 3.2)
+  ctx.lineTo(-8, 3.2)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#c2410c'
+  ctx.fillRect(-6.2, -3.3, 1.6, 6.6)
+  ctx.fillStyle = '#57534e'
+  ctx.fillRect(-8.6, -2.8, 0.8, 5.6)
+}
+
+function drawShell(ctx: CanvasRenderingContext2D, p: Particle) {
+  const t = p.age / p.life
+  ctx.lineCap = 'round'
+  for (let i = 0; i < TRACER_STEPS; i++) {
+    const u0 = t - (TRACER_SPAN * i) / TRACER_STEPS
+    const u1 = t - (TRACER_SPAN * (i + 1)) / TRACER_STEPS
+    if (u1 < 0) break
+    const a = shellPosition(p, u0)
+    const b = shellPosition(p, u1)
+    const k = 1 - i / TRACER_STEPS
+    ctx.strokeStyle = `rgba(${p.color},${0.9 * k})`
+    ctx.lineWidth = 3 * p.size * k * shellLift(u0)
+    ctx.beginPath()
+    ctx.moveTo(a.x, a.y)
+    ctx.lineTo(b.x, b.y)
+    ctx.stroke()
+  }
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.save()
+  ctx.translate(p.x, p.y)
+  ctx.rotate(shellAngle(p, t))
+  const k = p.size * shellLift(t)
+  ctx.scale(k, k)
+  shellBody(ctx)
+  ctx.restore()
+}
+
 export function draw(ctx: CanvasRenderingContext2D, ps: Particle[]) {
   for (const p of ps) {
     const fade = 1 - p.age / p.life
@@ -231,17 +292,9 @@ export function draw(ctx: CanvasRenderingContext2D, ps: Particle[]) {
         ctx.fillStyle = `rgba(${p.color},${fade * 0.4})`
         circle(ctx, p.x, p.y, p.size)
         break
-      case 'shell': {
-        const t = p.age / p.life
-        for (let i = 5; i >= 1; i--) {
-          const q = shellPosition(p, Math.max(0, t - i * 0.03))
-          ctx.fillStyle = `rgba(251,146,60,${0.12 * (6 - i)})`
-          circle(ctx, q.x, q.y, p.size * (1 - i * 0.12))
-        }
-        ctx.fillStyle = `rgba(${p.color},1)`
-        circle(ctx, p.x, p.y, p.size)
+      case 'shell':
+        drawShell(ctx, p)
         break
-      }
       default:
         ctx.fillStyle = `rgba(${p.color},${fade})`
         circle(ctx, p.x, p.y, p.size * (0.4 + 0.6 * fade))

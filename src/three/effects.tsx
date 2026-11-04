@@ -4,13 +4,18 @@ import {
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
+  CylinderGeometry,
   Group,
+  LatheGeometry,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   NormalBlending,
   RingGeometry,
   ShaderMaterial,
   SphereGeometry,
+  Vector2,
+  Vector3,
   type Blending,
 } from 'three'
 
@@ -349,16 +354,40 @@ export function Burst({
   )
 }
 
-const shellGeometry = new SphereGeometry(0.11, 10, 8)
-const shellMaterial = new MeshBasicMaterial({ color: '#fde68a' })
-const trailMaterial = new MeshBasicMaterial({
-  color: '#fb923c',
+const SHELL_PROFILE: [number, number][] = [
+  [0, -0.26],
+  [0.08, -0.26],
+  [0.09, -0.24],
+  [0.09, 0.04],
+  [0.078, 0.13],
+  [0.05, 0.21],
+  [0.012, 0.26],
+  [0, 0.262],
+]
+/** A naval shell with its nose along +Y, about half a cell long. */
+const shellGeometry = new LatheGeometry(
+  SHELL_PROFILE.map(([r, y]) => new Vector2(r, y)),
+  16,
+)
+const bandGeometry = new CylinderGeometry(0.097, 0.097, 0.05, 16)
+const shellMaterial = new MeshStandardMaterial({
+  color: '#e0a82e',
+  emissive: '#7c2d12',
+  emissiveIntensity: 0.5,
+  metalness: 0.7,
+  roughness: 0.35,
+})
+const bandMaterial = new MeshStandardMaterial({ color: '#c2410c', metalness: 0.5, roughness: 0.5 })
+const tracerGeometry = new SphereGeometry(0.06, 8, 6)
+const tracerMaterial = new MeshBasicMaterial({
+  color: '#fdba74',
   transparent: true,
-  opacity: 0.5,
+  opacity: 0.55,
   blending: AdditiveBlending,
   depthWrite: false,
 })
-const TRAIL = 6
+const TRACER = 16
+const UP = new Vector3(0, 1, 0)
 
 /** A shell on a ballistic-looking arc; calls `onLand` once when it reaches the target. */
 export function Shell({
@@ -372,9 +401,11 @@ export function Shell({
   duration: number
   onLand: () => void
 }) {
-  const group = useRef<Group>(null)
+  const head = useRef<Group>(null)
+  const tracer = useRef<Group>(null)
   const start = useRef<number | null>(null)
   const landed = useRef(false)
+  const heading = useMemo(() => new Vector3(), [])
   const dist = Math.hypot(to[0] - from[0], to[2] - from[2])
   const arc = 1.5 + dist * 0.3
 
@@ -389,13 +420,18 @@ export function Shell({
 
   useFrame(({ clock }) => {
     if (start.current === null) start.current = clock.elapsedTime
-    const u = (clock.elapsedTime - start.current) / duration
-    const g = group.current
-    if (g) {
-      g.children.forEach((child, i) => {
-        child.position.set(...at(u - i * 0.025))
-      })
+    const u = Math.min((clock.elapsedTime - start.current) / duration, 1)
+    if (head.current) {
+      head.current.position.set(...at(u))
+      const c = Math.max(0, Math.min(1, u))
+      heading
+        .set(to[0] - from[0], to[1] - from[1] + arc * 4 * (1 - 2 * c), to[2] - from[2])
+        .normalize()
+      head.current.quaternion.setFromUnitVectors(UP, heading)
     }
+    tracer.current?.children.forEach((child, i) => {
+      child.position.set(...at(u - (i + 1) * 0.006))
+    })
     if (u >= 1 && !landed.current) {
       landed.current = true
       onLand()
@@ -403,17 +439,22 @@ export function Shell({
   })
 
   return (
-    <group ref={group}>
-      <mesh geometry={shellGeometry} material={shellMaterial} position={from} />
-      {Array.from({ length: TRAIL }, (_, i) => (
-        <mesh
-          key={i}
-          geometry={shellGeometry}
-          material={trailMaterial}
-          position={from}
-          scale={1 - (i + 1) / (TRAIL + 1)}
-        />
-      ))}
+    <group>
+      <group ref={head} position={from}>
+        <mesh geometry={shellGeometry} material={shellMaterial} />
+        <mesh geometry={bandGeometry} material={bandMaterial} position={[0, -0.17, 0]} />
+      </group>
+      <group ref={tracer}>
+        {Array.from({ length: TRACER }, (_, i) => (
+          <mesh
+            key={i}
+            geometry={tracerGeometry}
+            material={tracerMaterial}
+            position={from}
+            scale={1 - i / TRACER}
+          />
+        ))}
+      </group>
     </group>
   )
 }

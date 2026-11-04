@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ember, explosion, firework, shell, shellPosition, splash, step } from './particles'
+import {
+  ember,
+  explosion,
+  firework,
+  shell,
+  shellAngle,
+  shellPosition,
+  splash,
+  step,
+} from './particles'
 
 const fixed = () => 0.5
 
@@ -11,6 +20,15 @@ describe('particles', () => {
     expect(shellPosition(p, 0.5).y).toBeLessThan(100)
     const [moved] = step([p], 0.5)
     expect(moved.x).toBeCloseTo(50)
+  })
+
+  it('points the shell along its flight path', () => {
+    const p = shell(0, 100, 100, 100, 1, 1)
+    expect(shellAngle(p, 0)).toBeLessThan(0)
+    expect(shellAngle(p, 0.5)).toBeCloseTo(0)
+    expect(shellAngle(p, 1)).toBeGreaterThan(0)
+    const down = shell(50, 0, 50, 100, 1, 1)
+    expect(shellAngle(down, 0.9)).toBeCloseTo(Math.PI / 2, 0)
   })
 
   it('removes particles once their life is over', () => {
