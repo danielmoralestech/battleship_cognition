@@ -40,6 +40,10 @@ test('?view=3d renders the battle in a WebGL canvas and fires on tap/click', asy
   if (isMobile) await page.touchscreen.tap(target.x, target.y)
   else await page.mouse.click(target.x, target.y)
   await expect(page.getByText(/Your shots: 1\b/)).toBeVisible()
+  // The 3D shell plays the same gun, whistle and impact sounds as 2D.
+  await expect
+    .poll(() => page.evaluate(() => window.__sounds ?? []))
+    .toEqual(expect.arrayContaining(['fire', 'whistle']))
 
   await switchView(page, isMobile, '2D view')
   await expect(page.getByRole('grid', { name: 'Enemy waters' })).toBeVisible()

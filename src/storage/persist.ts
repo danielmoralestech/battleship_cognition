@@ -5,6 +5,7 @@ const GAME_KEY = 'battleship:game:v1'
 const STATS_KEY = 'battleship:stats:v1'
 const VIEW_KEY = 'battleship:view:v1'
 const COLORS_KEY = 'battleship:colors:v1'
+const SETTINGS_KEY = 'battleship:settings:v1'
 
 export interface Record {
   wins: number
@@ -65,6 +66,21 @@ export function loadColors(): FleetColors {
 }
 
 export const saveColors = (colors: FleetColors) => write(COLORS_KEY, colors)
+
+export interface Settings {
+  sound: boolean
+}
+
+export const DEFAULT_SETTINGS: Settings = { sound: true }
+
+export function loadSettings(): Settings {
+  const saved = read<Partial<Settings>>(SETTINGS_KEY)
+  return {
+    sound: typeof saved?.sound === 'boolean' ? saved.sound : DEFAULT_SETTINGS.sound,
+  }
+}
+
+export const saveSettings = (settings: Settings) => write(SETTINGS_KEY, settings)
 
 export function loadStats(): Stats {
   return { ...emptyStats(), ...read<Stats>(STATS_KEY) }

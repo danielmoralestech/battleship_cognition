@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { playGameOver } from '../audio/sound'
 import { Celebration } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 
@@ -13,6 +14,13 @@ export function GameOverModal({ game, hold = false }: { game: GameApi; hold?: bo
   // After a held 3D finish, leave time for the sinking blast before the dialog covers it.
   const delay = wasHeld ? 1 : 0.6
   const won = state.winner === 'human'
+  // The fanfare or horn waits for the final sinking blast and comes in with the dialog.
+  const sounded = useRef(false)
+  useEffect(() => {
+    if (!open || sounded.current) return
+    sounded.current = true
+    playGameOver(won, (delay + 0.6) * 1000)
+  }, [open, won, delay])
   const shots = state.log.filter((e) => e.by === 'human')
   const hits = shots.filter((e) => e.result !== 'miss').length
   const record = stats[state.difficulty]
