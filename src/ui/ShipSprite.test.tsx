@@ -117,5 +117,6 @@ describe('fleet colors', () => {
     )
     expect(h.match(/data-team=/g)).toHaveLength(1)
     expect(h).toContain(`data-team="${team}"`)
+    expect(h).toContain(`stroke="${team}8c"`)
   })
 })

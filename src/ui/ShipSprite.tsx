@@ -411,7 +411,8 @@ export function ShipSprite({
   const top = 50 - beam / 2
   const bot = 50 + beam / 2
   const base = sunk ? WRECK : type === 'submarine' ? SUB : STEEL
-  const p: Palette = team ? { ...base, team } : base
+  // Wrecks show their accents at the same 55% strength as the hull stripe (8c alpha).
+  const p: Palette = team ? { ...base, team: sunk ? `${team}8c` : team } : base
   // The submarine's hull is dark, so its accents get a light rim to keep dark colors visible.
   const rim = team && type === 'submarine' ? STEEL.structure : undefined
   const x0 = 5
