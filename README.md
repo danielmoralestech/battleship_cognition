@@ -7,6 +7,8 @@ entirely client-side and is hosted on GitHub Pages.
 
 **Play it:** https://danielmoralestech.github.io/battleship_cognition/
 
+**Bugs found and fixed:** [docs/bugs.md](docs/bugs.md)
+
 ## Rules (v1)
 
 - Each player has a 10x10 grid.
