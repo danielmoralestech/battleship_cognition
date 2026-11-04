@@ -189,3 +189,26 @@ test.describe('mouse placement', () => {
     ).toBeVisible()
   })
 })
+
+test('fleet colors recolor the accents and are remembered', async ({ page }) => {
+  const mine = page.getByRole('radiogroup', { name: 'Your fleet color' })
+  const theirs = page.getByRole('radiogroup', { name: 'Enemy fleet color' })
+  await expect(mine.getByRole('radio', { name: 'Blue' })).toHaveAttribute('aria-checked', 'true')
+  await expect(theirs.getByRole('radio', { name: 'Red' })).toHaveAttribute('aria-checked', 'true')
+  await expect(mine.getByRole('radio')).toHaveCount(10)
+
+  await mine.getByRole('radio', { name: 'Green' }).click()
+  await theirs.getByRole('radio', { name: 'Purple' }).click()
+  await expect(mine.getByRole('radio', { name: 'Green' })).toHaveAttribute('aria-checked', 'true')
+  await expect(chip(page, 'Carrier').locator('[data-team="#22c55e"]')).toHaveCount(1)
+
+  await page.getByRole('button', { name: 'Randomize' }).click()
+  await expect(board(page).locator('[data-team="#22c55e"]')).toHaveCount(5)
+  await page.getByRole('button', { name: 'Start battle' }).click()
+  const myFleet = page.locator('[aria-label="Your fleet"]').first()
+  await expect(myFleet.locator('[data-team="#22c55e"]')).toHaveCount(5)
+
+  expect(
+    await page.evaluate(() => JSON.parse(localStorage.getItem('battleship:colors:v1')!)),
+  ).toEqual({ human: 'green', ai: 'purple' })
+})

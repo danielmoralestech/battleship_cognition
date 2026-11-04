@@ -46,6 +46,8 @@ interface SceneProps {
   reduced: boolean
   insets: RefObject<HudInsets>
   fpsEl?: RefObject<HTMLElement | null>
+  /** Fleet accent color (hex) per player. */
+  teams: Record<PlayerId, string>
 }
 
 /** Board shots without the shells still queued or in flight, so results appear when they land. */
@@ -67,7 +69,7 @@ interface ActiveBurst {
 
 const SUNK_STAGGER = 0.14
 
-export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: SceneProps) {
+export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl, teams }: SceneProps) {
   const size = state.rules.gridSize
   const placements = useMemo(() => boardPlacements(layout), [layout])
   const waveAmp = reduced ? 0.025 : 0.07
@@ -220,6 +222,7 @@ export function Scene({ state, fire, layout, focus, reduced, insets, fpsEl }: Sc
             board={placements[owner]}
             size={size}
             sunk={sunk}
+            team={teams[owner]}
             waveAmp={waveAmp}
           />
         )),

@@ -1,8 +1,10 @@
 import type { Difficulty, GameState } from '../engine/types'
+import { DEFAULT_FLEET_COLORS, isTeamColor, type FleetColors } from '../ui/teamColors'
 
 const GAME_KEY = 'battleship:game:v1'
 const STATS_KEY = 'battleship:stats:v1'
 const VIEW_KEY = 'battleship:view:v1'
+const COLORS_KEY = 'battleship:colors:v1'
 
 export interface Record {
   wins: number
@@ -53,6 +55,16 @@ export const loadView = (): '2d' | '3d' | null => {
 }
 
 export const saveView = (view: '2d' | '3d') => write(VIEW_KEY, view)
+
+export function loadColors(): FleetColors {
+  const saved = read<Partial<FleetColors>>(COLORS_KEY)
+  return {
+    human: isTeamColor(saved?.human) ? saved.human : DEFAULT_FLEET_COLORS.human,
+    ai: isTeamColor(saved?.ai) ? saved.ai : DEFAULT_FLEET_COLORS.ai,
+  }
+}
+
+export const saveColors = (colors: FleetColors) => write(COLORS_KEY, colors)
 
 export function loadStats(): Stats {
   return { ...emptyStats(), ...read<Stats>(STATS_KEY) }

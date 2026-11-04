@@ -7,6 +7,7 @@ import { Announcer } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
 import { FleetStatus } from '../ui/FleetStatus'
+import { useTeamHex } from '../ui/teamColors'
 import { CAMERA_FOV, Scene, type HudInsets } from './Scene'
 
 const MAX_DPR = 2
@@ -14,6 +15,8 @@ const MAX_DPR = 2
 /** Experimental three.js battle view (`?view=3d`). Fleet placement stays on the 2D screen. */
 export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () => void }) {
   const { state, fire } = game
+  const teamHex = useTeamHex()
+  const teams = { human: teamHex('human'), ai: teamHex('ai') }
   const layout = useBattleLayout()
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)')
   const [focus, setFocus] = useState<PlayerId>('ai')
@@ -96,6 +99,7 @@ export default function Battle3D({ game, onExit }: { game: GameApi; onExit: () =
               reduced={reduced}
               insets={insets}
               fpsEl={showFps ? fpsEl : undefined}
+              teams={teams}
             />
           </Canvas>
         )}

@@ -19,6 +19,8 @@ export interface BoardShip {
    * from nothing (a hidden enemy ship); `wreck` keeps the intact ship until then.
    */
   sinking?: 'reveal' | 'wreck'
+  /** Fleet accent color (hex). */
+  team?: string
 }
 
 /** SVG units per board cell. Sprites are drawn bow-right and rotated for vertical ships. */
@@ -48,6 +50,8 @@ interface Palette {
   detail: string
   marking: string
   accent: string
+  /** Fleet color for accents; the default art when unset. */
+  team?: string
 }
 
 const STEEL: Palette = {
@@ -102,14 +106,20 @@ function Turret({
       <rect x={bx} y={44} width={barrel} height={4} rx={2} fill={p.detail} />
       <rect x={bx} y={52} width={barrel} height={4} rx={2} fill={p.detail} />
       <circle cx={x} cy={50} r={r} fill={p.structure} stroke={p.detail} strokeWidth={3} />
-      <circle cx={x - dir * 3} cy={47} r={r * 0.45} fill={p.structureTop} opacity={0.7} />
+      <circle
+        cx={x - dir * 3}
+        cy={47}
+        r={r * 0.45}
+        fill={p.team ?? p.structureTop}
+        opacity={0.85}
+      />
     </g>
   )
 }
 
 function Helipad({ x, p }: { x: number; p: Palette }) {
   return (
-    <g stroke={p.marking} strokeWidth={2.5} fill="none" opacity={0.65}>
+    <g stroke={p.team ?? p.marking} strokeWidth={2.5} fill="none" opacity={p.team ? 0.9 : 0.65}>
       <circle cx={x} cy={50} r={15} />
       <path d={`M${x - 6} 42 v16 M${x + 6} 42 v16 M${x - 6} 50 h12`} />
     </g>
@@ -137,7 +147,7 @@ function Details({
               <path d="M58 76 L342 32" stroke={p.marking} strokeWidth={2} opacity={0.5} />
               <path
                 d="M55 70 L336 26"
-                stroke="#fbbf24"
+                stroke={p.team ?? '#fbbf24'}
                 strokeWidth={2.5}
                 strokeDasharray="14 10"
                 opacity={0.85}
@@ -170,7 +180,7 @@ function Details({
           <rect x={262} y={70} width={78} height={17} rx={3} fill={p.detail} opacity={0.5} />
           <rect x={266} y={68} width={70} height={15} rx={3} fill={p.structure} />
           <rect x={286} y={71} width={26} height={9} rx={2} fill={p.structureTop} />
-          {!simple && <circle cx={299} cy={75.5} r={4} fill={p.accent} />}
+          {!simple && <circle cx={299} cy={75.5} r={4} fill={p.team ?? p.accent} />}
         </g>
       )
     case 'battleship':
@@ -194,7 +204,7 @@ function Details({
           <rect x={128} y={31} width={118} height={34} rx={7} fill={p.structure} />
           <ellipse cx={168} cy={48} rx={15} ry={10} fill={p.detail} />
           <rect x={198} y={38} width={38} height={20} rx={4} fill={p.structureTop} />
-          {!simple && <circle cx={217} cy={48} r={4} fill={p.accent} />}
+          {!simple && <circle cx={217} cy={48} r={4} fill={p.team ?? p.accent} />}
         </g>
       )
     case 'cruiser':
@@ -223,7 +233,7 @@ function Details({
           <rect x={92} y={36} width={72} height={30} rx={6} fill={p.detail} opacity={0.45} />
           <rect x={88} y={34} width={72} height={30} rx={6} fill={p.structure} />
           <rect x={118} y={40} width={30} height={18} rx={3} fill={p.structureTop} />
-          {!simple && <circle cx={133} cy={49} r={4.5} fill={p.accent} />}
+          {!simple && <circle cx={133} cy={49} r={4.5} fill={p.team ?? p.accent} />}
         </g>
       )
     case 'submarine':
@@ -273,7 +283,15 @@ function Details({
             stroke={p.detail}
             strokeWidth={2.5}
           />
-          <rect x={176} y={45} width={34} height={8} rx={4} fill={p.structureTop} opacity={0.8} />
+          <rect
+            x={176}
+            y={45}
+            width={34}
+            height={8}
+            rx={4}
+            fill={p.team ?? p.structureTop}
+            opacity={0.85}
+          />
         </g>
       )
     case 'destroyer':
@@ -288,7 +306,7 @@ function Details({
           <rect x={66} y={37} width={52} height={28} rx={5} fill={p.detail} opacity={0.45} />
           <rect x={62} y={35} width={52} height={28} rx={5} fill={p.structure} />
           <ellipse cx={78} cy={49} rx={9} ry={7} fill={p.detail} />
-          {!simple && <circle cx={101} cy={49} r={4} fill={p.accent} />}
+          {!simple && <circle cx={101} cy={49} r={4} fill={p.team ?? p.accent} />}
         </g>
       )
   }
@@ -361,6 +379,8 @@ interface ShipSpriteProps {
   tone?: ShipTone
   /** Hull and main superstructure only, for very small boards. */
   simple?: boolean
+  /** Fleet color, drawn as accents on the default steel art. */
+  team?: string
   className?: string
   style?: CSSProperties
 }
@@ -373,6 +393,7 @@ export function ShipSprite({
   sunk = false,
   tone,
   simple = false,
+  team,
   className = '',
   style,
 }: ShipSpriteProps) {
@@ -382,7 +403,8 @@ export function ShipSprite({
   const { beam, bow, stern } = HULLS[type]
   const top = 50 - beam / 2
   const bot = 50 + beam / 2
-  const p = sunk ? WRECK : type === 'submarine' ? SUB : STEEL
+  const base = sunk ? WRECK : type === 'submarine' ? SUB : STEEL
+  const p: Palette = team ? { ...base, team } : base
   const x0 = 5
   const x1 = w - 4
   const hull = hullPath(x0, x1, top, bot, bow, stern)
@@ -399,6 +421,24 @@ export function ShipSprite({
         strokeLinejoin="round"
       />
       <path d={deck} fill={`url(#${uid}-deck)`} />
+      {team && (
+        <g data-team={team} clipPath={`url(#${uid}-clip)`} opacity={sunk ? 0.55 : 1}>
+          <path
+            d={hullPath(x0 + 3, x1 - 4, top + 3, bot - 3, bow - 4, stern)}
+            fill="none"
+            stroke={team}
+            strokeWidth={simple ? 7 : 4}
+            strokeLinejoin="round"
+          />
+          <rect
+            x={x1 - bow - (simple ? 18 : 14)}
+            y={0}
+            width={simple ? 14 : 9}
+            height={U}
+            fill={team}
+          />
+        </g>
+      )}
       <Details type={type} w={w} p={p} simple={simple} />
       {sunk && <Damage w={w} uid={uid} top={top} bot={bot} simple={simple} />}
       {tone && (
@@ -430,11 +470,13 @@ export function ShipSprite({
           <stop offset="0" stopColor={p.deckLight} />
           <stop offset="1" stopColor={p.deckDark} />
         </linearGradient>
+        {(sunk || team) && (
+          <clipPath id={`${uid}-clip`}>
+            <path d={hull} />
+          </clipPath>
+        )}
         {sunk && (
           <>
-            <clipPath id={`${uid}-clip`}>
-              <path d={hull} />
-            </clipPath>
             <radialGradient id={`${uid}-scorch`}>
               <stop offset="0" stopColor="#0c0a09" stopOpacity={0.8} />
               <stop offset="0.6" stopColor="#1c1917" stopOpacity={0.45} />
@@ -458,7 +500,7 @@ export function ShipLayer({
   offset: number
   simple?: boolean
 }) {
-  return ships.map(({ ship, sunk, lifted, preview, sinking }) => {
+  return ships.map(({ ship, sunk, lifted, preview, sinking, team }) => {
     const sprite = (wreck?: boolean) => (
       <ShipSprite
         type={ship.type}
@@ -466,6 +508,7 @@ export function ShipLayer({
         orientation={ship.orientation}
         sunk={wreck}
         tone={preview}
+        team={preview ? undefined : team}
         simple={simple}
         className="size-full"
       />

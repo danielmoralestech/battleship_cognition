@@ -9,10 +9,12 @@ import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
 import { FleetStatus } from './FleetStatus'
 import { Grid, type CellView } from './Grid'
 import type { BoardShip } from './ShipSprite'
+import { useTeamHex } from './teamColors'
 
 export function GameScreen({ game }: { game: GameApi }) {
   const { state, fire } = game
   const layout = useBattleLayout()
+  const teamHex = useTeamHex()
   const [fleetOpen, setFleetOpen] = useState(false)
   const { rules, boards, log } = state
   const latest = log[log.length - 1] ?? null
@@ -38,11 +40,13 @@ export function GameScreen({ game }: { game: GameApi }) {
       ship,
       sunk: isShipSunk(boards.ai, ship),
       sinking: ship.type === enemyJustSunk ? 'reveal' : undefined,
+      team: teamHex('ai'),
     }))
   const myShips: BoardShip[] = boards.human.ships.map((ship) => ({
     ship,
     sunk: isShipSunk(boards.human, ship),
     sinking: ship.type === myJustSunk ? 'wreck' : undefined,
+    team: teamHex('human'),
   }))
 
   const enemyGridRef = useRef<HTMLDivElement>(null)
