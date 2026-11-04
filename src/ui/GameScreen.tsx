@@ -18,6 +18,7 @@ import { useTeamHex } from './teamColors'
 export function GameScreen({ game }: { game: GameApi }) {
   const { state, fire } = game
   const layout = useBattleLayout()
+  const narrow = useMediaQuery('(max-width: 359px)')
   const teamHex = useTeamHex()
   const [fleetOpen, setFleetOpen] = useState(false)
   const aim = useAim(state, fire)
@@ -191,8 +192,12 @@ export function GameScreen({ game }: { game: GameApi }) {
       sunk={boards.human.ships.filter((s) => isShipSunk(boards.human, s)).map((s) => s.type)}
     />
   )
-  const myStats = `Your shots: ${mine.shots} · Accuracy: ${mine.accuracy}%`
-  const theirStats = `Enemy shots: ${theirs.shots} · Accuracy: ${theirs.accuracy}%`
+  const myStats = narrow
+    ? `You: ${mine.shots} shots, ${mine.accuracy}%`
+    : `Your shots: ${mine.shots} · Accuracy: ${mine.accuracy}%`
+  const theirStats = narrow
+    ? `Enemy: ${theirs.shots} shots, ${theirs.accuracy}%`
+    : `Enemy shots: ${theirs.shots} · Accuracy: ${theirs.accuracy}%`
 
   if (layout === 'portrait') {
     return (

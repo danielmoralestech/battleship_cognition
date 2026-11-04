@@ -41,7 +41,7 @@ export function GameOverModal({ game, hold = false }: { game: GameApi; hold?: bo
               role="dialog"
               aria-modal="true"
               aria-labelledby="game-over-title"
-              className="w-full max-w-sm rounded-2xl border border-sky-700 bg-slate-900 p-6 text-center shadow-2xl"
+              className="w-full max-w-sm rounded-2xl border border-sky-700 bg-slate-900 p-6 text-center shadow-2xl max-[359px]:p-4"
               initial={{ y: 40, scale: 0.9 }}
               animate={{ y: 0, scale: 1 }}
               transition={{ delay, type: 'spring', stiffness: 260, damping: 20 }}
@@ -77,7 +77,11 @@ export function GameOverModal({ game, hold = false }: { game: GameApi; hold?: bo
                 <button type="button" className="btn-secondary" onClick={() => setDismissed(true)}>
                   Review
                 </button>
-                <button type="button" className="btn-primary" onClick={() => playAgain(true)}>
+                <button
+                  type="button"
+                  className="btn-primary max-[359px]:px-1 max-[359px]:text-sm"
+                  onClick={() => playAgain(true)}
+                >
                   Rematch
                 </button>
                 <button type="button" className="btn-secondary" onClick={() => playAgain(false)}>

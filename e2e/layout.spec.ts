@@ -47,6 +47,19 @@ test.describe('phone layouts', () => {
     }
   }
 
+  test('4-inch SE battle still fits once the shot stats reach three digits', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 568 })
+    await open(page, true)
+    await page.getByRole('button', { name: 'Randomize' }).click()
+    await page.getByRole('button', { name: 'Start battle' }).click()
+    const stats = page.getByText(/^You: \d+ shots/)
+    await expect(stats).toBeVisible()
+    await stats.evaluate((p) => {
+      p.innerHTML = 'You: 100 shots, 100%<br>Enemy: 100 shots, 100%'
+    })
+    expect(await overflow(page)).toEqual({ x: 0, y: 0 })
+  })
+
   test('setup on a short, narrow landscape screen leaves room for the controls', async ({
     page,
   }) => {
