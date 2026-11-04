@@ -17,6 +17,8 @@ export function useAim(state: GameState, fire: (coord: Coord) => void): Aim {
   const enabled = settings.aimToFire
   // Tagged with the shot count so an aim never outlives the turn it was made in.
   const [raw, setRaw] = useState<{ coord: Coord; shot: number } | null>(null)
+  // Switching the setting off drops the aim, so switching it back on starts fresh.
+  if (!enabled && raw) setRaw(null)
   const humanTurn = state.phase === 'playing' && state.turn === 'human'
   const aimed =
     enabled &&

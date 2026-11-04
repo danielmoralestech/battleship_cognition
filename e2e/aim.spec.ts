@@ -62,14 +62,27 @@ test('aim before firing: first tap aims, second tap or Fire fires', async ({ pag
   await shots(page, 2 + 1).toBeVisible()
   await expect(cell(page, 'G7')).not.toHaveAttribute('data-shot', '')
 
+  // Switching the setting off and on again forgets the aim.
+  await yourTurn(page)
+  await cell(page, 'J10').click()
+  await expect(cell(page, 'J10')).toHaveAttribute('data-aimed', 'true')
+  await setAim(page, isMobile, false)
+  await setAim(page, isMobile, true)
+  await expect(enemy(page).locator('[data-aimed]')).toHaveCount(0)
+  await cell(page, 'J10').click()
+  await expect(cell(page, 'J10')).toHaveAttribute('data-aimed', 'true')
+  await shots(page, 3).toBeVisible()
+  await cell(page, 'J10').click()
+  await shots(page, 4).toBeVisible()
+
   // Keyboard: Enter aims, Enter again fires.
   await yourTurn(page)
   await cell(page, 'H8').focus()
   await page.keyboard.press('Enter')
   await expect(cell(page, 'H8')).toHaveAttribute('data-aimed', 'true')
-  await shots(page, 3).toBeVisible()
-  await page.keyboard.press('Enter')
   await shots(page, 4).toBeVisible()
+  await page.keyboard.press('Enter')
+  await shots(page, 5).toBeVisible()
 
   // Remembered across a reload, and switching it off fires on one tap again.
   await page.reload()
@@ -77,7 +90,7 @@ test('aim before firing: first tap aims, second tap or Fire fires', async ({ pag
   await expect(page.getByRole('button', { name: 'Tap a square to aim' })).toBeVisible()
   await setAim(page, isMobile, false)
   await cell(page, 'B2').click()
-  await shots(page, 5).toBeVisible()
+  await shots(page, 6).toBeVisible()
 })
 
 test('aim before firing in 3D: tap aims, Fire button and second tap fire', async ({
