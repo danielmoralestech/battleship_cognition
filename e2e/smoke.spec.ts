@@ -4,6 +4,8 @@ import { expect, test } from '@playwright/test'
 test.use({ reducedMotion: 'reduce' })
 
 test('place a fleet, play a full game and see the result', async ({ page }) => {
+  // ~50 turns at full shot timing take ~30s locally and can pass 60s on a slow CI runner.
+  test.slow()
   await page.goto('./?difficulty=easy')
   await page.evaluate(() => localStorage.clear())
   await page.reload()

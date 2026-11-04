@@ -18,6 +18,7 @@ import { useTeamHex } from './teamColors'
 export function GameScreen({ game }: { game: GameApi }) {
   const { state, fire } = game
   const layout = useBattleLayout()
+  const narrow = useMediaQuery('(max-width: 359px)')
   const teamHex = useTeamHex()
   const [fleetOpen, setFleetOpen] = useState(false)
   const aim = useAim(state, fire)
@@ -112,7 +113,7 @@ export function GameScreen({ game }: { game: GameApi }) {
   const status = (
     <div className="flex flex-col items-center gap-1">
       <p
-        className={`font-semibold uppercase ${layout === 'landscape' ? 'text-xs tracking-wide' : 'text-sm tracking-widest'} ${humanTurn ? 'text-amber-300' : 'text-slate-400'}`}
+        className={`font-semibold uppercase ${layout === 'landscape' ? 'text-xs tracking-wide' : 'text-xs tracking-wide min-[360px]:text-sm min-[360px]:tracking-widest'} ${humanTurn ? 'text-amber-300' : 'text-slate-400'}`}
         data-testid="turn-indicator"
       >
         {state.phase === 'gameOver'
@@ -126,9 +127,8 @@ export function GameScreen({ game }: { game: GameApi }) {
     </div>
   )
 
-  const fireButton = aim.enabled && state.phase === 'playing' && (
-    <FireButton aim={aim} className="w-full max-w-[26rem] py-2" />
-  )
+  const fireButton = (className: string) =>
+    aim.enabled && state.phase === 'playing' && <FireButton aim={aim} className={className} />
 
   const enemyAiming = state.phase === 'playing' && !humanTurn
   const enemyBoard = (
@@ -192,20 +192,23 @@ export function GameScreen({ game }: { game: GameApi }) {
       sunk={boards.human.ships.filter((s) => isShipSunk(boards.human, s)).map((s) => s.type)}
     />
   )
-  const myStats = `Your shots: ${mine.shots} · Accuracy: ${mine.accuracy}%`
-  const theirStats = `Enemy shots: ${theirs.shots} · Accuracy: ${theirs.accuracy}%`
+  const myStats = narrow
+    ? `You: ${mine.shots} shots, ${mine.accuracy}%`
+    : `Your shots: ${mine.shots} · Accuracy: ${mine.accuracy}%`
+  const theirStats = narrow
+    ? `Enemy: ${theirs.shots} shots, ${theirs.accuracy}%`
+    : `Enemy shots: ${theirs.shots} · Accuracy: ${theirs.accuracy}%`
 
   if (layout === 'portrait') {
     return (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-3 max-[359px]:gap-2">
         {status}
         <section
           aria-label="Enemy waters"
-          className="w-full max-w-[clamp(16rem,calc(100dvh-22.5rem),26rem)]"
+          className="w-full max-w-[clamp(15rem,calc(100dvh-23.25rem),26rem)]"
         >
           {enemyBoard}
         </section>
-        {fireButton}
         <section aria-label="Battle status" className="flex w-full max-w-[26rem] items-start gap-3">
           <button
             type="button"
@@ -219,9 +222,10 @@ export function GameScreen({ game }: { game: GameApi }) {
             </span>
           </button>
           <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {fireButton('w-full whitespace-nowrap px-2 py-1.5 text-xs min-[360px]:text-sm')}
             {enemyFleet}
             {myFleet}
-            <p className="text-xs text-slate-400">
+            <p className="text-[11px] text-slate-400 min-[360px]:text-xs">
               {myStats}
               <br />
               {theirStats}
@@ -243,7 +247,7 @@ export function GameScreen({ game }: { game: GameApi }) {
         </section>
         <div className="flex w-36 shrink-0 flex-col gap-2 text-center">
           {status}
-          {fireButton}
+          {fireButton('w-full whitespace-nowrap px-1 py-1.5 text-xs')}
           {enemyFleet}
           {myFleet}
           <p className="text-[11px] text-slate-400">
@@ -266,7 +270,7 @@ export function GameScreen({ game }: { game: GameApi }) {
         <section className="flex w-full max-w-[26rem] flex-col items-center gap-3">
           <h2 className="text-lg font-semibold text-sky-100">Enemy waters</h2>
           {enemyBoard}
-          {fireButton}
+          {fireButton('w-full py-2')}
           {enemyFleet}
           <p className="text-xs text-slate-400">{myStats}</p>
         </section>

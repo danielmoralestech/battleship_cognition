@@ -42,7 +42,7 @@ export function GameMenu({
 
   return (
     <>
-      <div className="hidden items-center gap-3 sm:flex">
+      <div className="hidden items-center gap-3 md:flex">
         {viewSwitch && (
           <button type="button" className="btn-secondary" onClick={viewSwitch.onClick}>
             {viewSwitch.label}
@@ -63,7 +63,7 @@ export function GameMenu({
         ))}
       </div>
 
-      <div className="relative sm:hidden">
+      <div className="relative md:hidden">
         <button
           ref={menuButton}
           type="button"
