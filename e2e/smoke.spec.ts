@@ -22,6 +22,10 @@ test('place a fleet, play a full game and see the result', async ({ page }) => {
 
   await expect(dialog).toBeVisible()
   await expect(dialog.getByRole('heading')).toHaveText(/Victory!|Defeat/)
+  const won = (await dialog.getByRole('heading').textContent()) === 'Victory!'
+  await expect
+    .poll(() => page.evaluate(() => window.__sounds ?? []))
+    .toContain(won ? 'victory' : 'defeat')
   await dialog.getByRole('button', { name: 'Rematch' }).click()
   await expect(page.getByRole('button', { name: 'Start battle' })).toBeEnabled()
 })

@@ -14,6 +14,7 @@ import {
 import { canFire } from '../engine/game'
 import { isShipSunk, parseCoordKey, shipCells } from '../engine/board'
 import type { Board, Coord, GameState, PlayerId, ShotEvent } from '../engine/types'
+import { useShotSound } from '../audio/useShotSound'
 import type { BattleLayout } from '../hooks/useMediaQuery'
 import { Burst, FireField, Shell, type BurstKind, type Vec3 } from './effects'
 import {
@@ -94,6 +95,7 @@ export function Scene({
   if (landedId > lastId) setLandedId(lastId)
   const unlanded = state.log.filter((e) => e.id > landedId)
   const pending = unlanded.find((e) => e.id === landedId + 1) ?? null
+  useShotSound(pending, state.rules, reduced ? 0 : SHELL_SECONDS * 1000)
   useEffect(() => onLanded?.(landedId), [landedId, onLanded])
   useEffect(() => () => onLanded?.(null), [onLanded])
 

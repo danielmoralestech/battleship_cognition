@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { GameApi } from '../hooks/useGame'
+import { SettingsDialog } from './SettingsDialog'
 
 type Action = 'restart' | 'newFleet'
 
 const LABELS: Record<Action, string> = { restart: 'Restart', newFleet: 'New fleet' }
 
 /**
- * Restart / New fleet: inline on wider screens, behind a menu on phones, confirmed mid-battle.
+ * Settings / Restart / New fleet: inline on wider screens, behind a menu on phones; restarts are
+ * confirmed mid-battle.
  * `viewSwitch` adds a 2D/3D view switch as the first item.
  */
 export function GameMenu({
@@ -19,6 +21,15 @@ export function GameMenu({
   const { state, playAgain } = game
   const [menuOpen, setMenuOpen] = useState(false)
   const [pending, setPending] = useState<Action | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsButton = useRef<HTMLButtonElement>(null)
+  const menuButton = useRef<HTMLButtonElement>(null)
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false)
+    // Return focus to whichever opener is visible at this screen size.
+    const opener = [settingsButton.current, menuButton.current].find((b) => b?.offsetParent)
+    opener?.focus()
+  }, [])
   const over = state.phase === 'gameOver'
   const label = (a: Action) => (a === 'restart' && over ? 'Rematch' : LABELS[a])
 
@@ -37,6 +48,14 @@ export function GameMenu({
             {viewSwitch.label}
           </button>
         )}
+        <button
+          ref={settingsButton}
+          type="button"
+          className="btn-secondary"
+          onClick={() => setSettingsOpen(true)}
+        >
+          Settings
+        </button>
         {(['restart', 'newFleet'] as const).map((a) => (
           <button key={a} type="button" className="btn-secondary" onClick={() => request(a)}>
             {label(a)}
@@ -46,6 +65,7 @@ export function GameMenu({
 
       <div className="relative sm:hidden">
         <button
+          ref={menuButton}
           type="button"
           className="btn-secondary px-2.5 text-base leading-none"
           aria-label="Game menu"
@@ -75,6 +95,17 @@ export function GameMenu({
                   {viewSwitch.label}
                 </button>
               )}
+              <button
+                type="button"
+                role="menuitem"
+                className="border-b border-slate-800 px-4 py-3 text-left text-sm text-slate-200 hover:bg-slate-800"
+                onClick={() => {
+                  setMenuOpen(false)
+                  setSettingsOpen(true)
+                }}
+              >
+                Settings
+              </button>
               {(['restart', 'newFleet'] as const).map((a) => (
                 <button
                   key={a}
@@ -90,6 +121,8 @@ export function GameMenu({
           </>
         )}
       </div>
+
+      {settingsOpen && <SettingsDialog onClose={closeSettings} />}
 
       {pending && (
         <div className="fixed inset-0 z-30 flex items-end justify-center bg-slate-950/60 p-4 sm:items-center">

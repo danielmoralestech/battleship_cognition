@@ -3,6 +3,8 @@ import { canFire } from '../engine/game'
 import { coordKey, isShipSunk, sameCoord, shipAt, shipCells } from '../engine/board'
 import { getTargetView } from '../engine/view'
 import type { Coord, PlayerId, ShotEvent } from '../engine/types'
+import { useShotSound } from '../audio/useShotSound'
+import { SHELL_MS } from '../effects/timing'
 import { Announcer, BoardFx, ImpactShake, ScreenFlash, ShotLog } from '../effects'
 import type { GameApi } from '../hooks/useGame'
 import { useBattleLayout, useMediaQuery } from '../hooks/useMediaQuery'
@@ -27,6 +29,7 @@ export function GameScreen({ game }: { game: GameApi }) {
   // Shots restored from storage, and reduced motion, play no shell, so their wrecks show at once.
   const [restoredShot] = useState(() => latest?.id ?? 0)
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  useShotSound(latest, rules, reducedMotion ? 0 : SHELL_MS)
   const justSunk = (by: PlayerId) => {
     const e = latestBy(by)
     if (reducedMotion || !e || e.id <= restoredShot) return undefined
