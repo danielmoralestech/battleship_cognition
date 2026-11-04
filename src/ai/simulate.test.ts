@@ -10,7 +10,6 @@ const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
 
 const RULE_VARIANTS: Record<string, RuleSet> = {
   standard: STANDARD_RULES,
-  'sinks not announced': { ...STANDARD_RULES, announceSinks: false },
   'no touching': { ...STANDARD_RULES, allowTouching: false },
   'small grid': {
     ...STANDARD_RULES,

@@ -12,7 +12,6 @@ export const STANDARD_RULES: RuleSet = {
   gridSize: 10,
   fleet: STANDARD_FLEET,
   allowTouching: true,
-  announceSinks: true,
   extraShotOnHit: false,
 }
 

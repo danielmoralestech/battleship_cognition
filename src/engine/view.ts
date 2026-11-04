@@ -11,13 +11,11 @@ export function getTargetView(board: Board, rules: RuleSet): TargetView {
     }),
   )
   const sunkShips: SunkShipInfo[] = []
-  if (rules.announceSinks) {
-    for (const ship of board.ships) {
-      if (!isShipSunk(board, ship)) continue
-      const shipCoords = shipCells(ship)
-      sunkShips.push({ type: ship.type, cells: shipCoords })
-      for (const c of shipCoords) cells[c.row][c.col] = 'sunk'
-    }
+  for (const ship of board.ships) {
+    if (!isShipSunk(board, ship)) continue
+    const shipCoords = shipCells(ship)
+    sunkShips.push({ type: ship.type, cells: shipCoords })
+    for (const c of shipCoords) cells[c.row][c.col] = 'sunk'
   }
   const sunkTypes = new Set(sunkShips.map((s) => s.type))
   return {

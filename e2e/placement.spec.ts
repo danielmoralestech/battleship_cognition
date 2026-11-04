@@ -102,6 +102,29 @@ test.describe('touch placement', () => {
     await expectShip(page, ['B1', 'B5'], null)
     await expect(page.getByRole('button', { name: 'Place 4 more' })).toBeVisible()
   })
+
+  test('a touch drag along the top row moves the ship instead of removing it', async ({ page }) => {
+    await cell(page, 'A1').tap()
+    await expectShip(page, ['A1', 'E1'], 'carrier')
+
+    // The finger stays on row 1, so the lifted aim point is above the board.
+    const b1 = await center(cell(page, 'B1'))
+    await touchDrag(page, cell(page, 'A1'), { x: b1.x, y: b1.y })
+    await expectShip(page, ['B1', 'F1'], 'carrier')
+    await expectShip(page, ['A1'], null)
+  })
+
+  test('a touch drop that does not fit leaves the ship where it was', async ({ page }) => {
+    await cell(page, 'A1').tap()
+    await chip(page, 'Battleship').tap()
+    await cell(page, 'A3').tap()
+    await expectShip(page, ['A3', 'D3'], 'battleship')
+
+    // Dropping the battleship onto the carrier is invalid: it goes back to A3–D3.
+    await touchDrag(page, cell(page, 'A3'), cell(page, 'A1'))
+    await expectShip(page, ['A3', 'D3'], 'battleship')
+    await expectShip(page, ['A1', 'E1'], 'carrier')
+  })
 })
 
 test.describe('mouse placement', () => {
